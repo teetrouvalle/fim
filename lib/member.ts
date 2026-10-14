@@ -1,13 +1,16 @@
 import "server-only";
-import { auth } from "./auth/server";
-import { db } from "./admin";
-export type Viewer = {id:string; email:string; name:string; verified:boolean};
+import {auth} from "./auth/server";
+import {db} from "./admin";
+import {getPhoneViewer} from "./phone-auth";
+export type Viewer={id:string;email:string;name:string;verified:boolean;phone?:string;method:"email"|"phone"};
 export async function getViewer():Promise<Viewer|null>{
+ const phone=await getPhoneViewer();
+ if(phone)return phone;
  try{
   const {data}=await auth.getSession();
   const u=data?.user;
   if(!u?.id||!u.email)return null;
-  return {id:u.id,email:u.email,name:u.name||u.email,verified:!!u.emailVerified};
+  return {id:u.id,email:u.email,name:u.name||u.email,verified:!!u.emailVerified,method:"email"};
  }catch{return null}
 }
 export async function getVerifiedViewer(){const v=await getViewer();return v?.verified?v:null}

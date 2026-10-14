@@ -1,24 +1,29 @@
 "use client";
 import {useActionState,useState} from "react";
-import Link from "next/link";
 import {memberSignIn,memberSignUp,memberGoogleLogin} from "./actions";
 export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"signin"|"signup"}){
  const [tab,setTab]=useState<"signin"|"signup">(initialTab);
- const [signInState,signInAction,signInPending]=useActionState(memberSignIn,null);
- const [signUpState,signUpAction,signUpPending]=useActionState(memberSignUp,null);
+ const [kind,setKind]=useState<"email"|"phone">("email");
+ const [login,loginAction,loginPending]=useActionState(memberSignIn,null);
+ const [signup,signupAction,signupPending]=useActionState(memberSignUp,null);
+ const state=tab==="signin"?login:signup;
  return <div className="admin-login" style={{marginTop:40}}>
- <p className="eyebrow">FIM ADDIS ACCOUNT</p><h1>{tab==="signup"?"Create account":"Welcome back"}</h1>
- <p className="muted">Create an account and choose a membership. An administrator will review your registration before any payment or viewing access. No email code is required.</p>
+ <p className="eyebrow">FIM ADDIS</p><h1>{tab==="signup"?"Create your account":"Welcome back"}</h1>
+ <p className="muted">Register with an email address or mobile number. No email verification code is required. Browse free videos immediately; paid films require an approved account and membership.</p>
  <div className="login-tabs"><button type="button" className={tab==="signin"?"active":""} onClick={()=>setTab("signin")}>Sign in</button><button type="button" className={tab==="signup"?"active":""} onClick={()=>setTab("signup")}>Sign up</button></div>
- <form className="admin-form" action={tab==="signup"?signUpAction:signInAction} key={tab}>
- {tab==="signup"&&<><label htmlFor="name">Your name</label><input id="name" name="name" required autoComplete="name"/></>}
- <label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="email"/>
- <label htmlFor="password">{tab==="signup"?"Password (minimum 8 characters)":"Password"}</label><input id="password" name="password" type="password" minLength={tab==="signup"?8:undefined} required autoComplete={tab==="signup"?"new-password":"current-password"}/>
- {(tab==="signup"?signUpState:signInState)?.message&&<p className={tab==="signup"&&signUpState?.message?.startsWith("Account created.")?"save-confirmation":"form-alert"} role="status">{(tab==="signup"?signUpState:signInState)?.message}</p>}
- {tab==="signup"&&signUpState?.message?.startsWith("Account created.")&&<div className="account-onboarding-next"><strong>Next: choose your membership</strong><p>Sign in to see your approval status and select Basic, Plus, or Premium. No email code is needed.</p><button type="button" className="account-alt-button" onClick={()=>setTab("signin")}>Sign in →</button><Link className="btn" href="/membership">Browse memberships →</Link></div>}
- <button className="btn" disabled={signInPending||signUpPending}>{tab==="signup"?"Create account":"Sign in"} →</button>
+ <form action={tab==="signup"?signupAction:loginAction} className="admin-form" key={tab+"-"+kind}>
+  <input type="hidden" name="kind" value={kind}/>
+  {tab==="signup"&&<><label htmlFor="name">Your name</label><input id="name" name="name" required autoComplete="name" maxLength={120}/></>}
+  <label>Register using</label>
+  <div className="auth-type-selector"><button type="button" className={kind==="email"?"selected":""} onClick={()=>setKind("email")}>Email</button><button type="button" className={kind==="phone"?"selected":""} onClick={()=>setKind("phone")}>Phone</button></div>
+  <label htmlFor="identity">{kind==="phone"?"Phone number":"Email address"}</label>
+  <input id="identity" name="identity" type={kind==="phone"?"tel":"email"} autoComplete={kind==="phone"?"tel":"email"} inputMode={kind==="phone"?"tel":"email"} required placeholder={kind==="phone"?"0912345678 or +251912345678":"name@example.com"}/>
+  <label htmlFor="password">{tab==="signup"?"Password (8 characters minimum)":"Password"}</label>
+  <input id="password" name="password" type="password" autoComplete={tab==="signup"?"new-password":"current-password"} minLength={tab==="signup"?8:undefined} required/>
+  {state?.message&&<p role="status" className="form-alert">{state.message}</p>}
+  <button className="btn" disabled={signupPending||loginPending}>{tab==="signup"?"Create account and browse films":"Sign in to the library"} →</button>
  </form>
- <form action={memberGoogleLogin} style={{marginTop:20}}><button className="account-alt-button" type="submit">Continue with Google</button></form>
- <p className="tiny muted">Manual administrator approval is required before any payment or paid viewing access. Keep your password private.</p>
+ <form action={memberGoogleLogin} style={{marginTop:18}}><button className="account-alt-button">Continue with Google</button></form>
+ <p className="tiny muted">Phone accounts cannot receive SMS password resets at this time. Keep your password safe. Paid memberships require administrator approval.</p>
  </div>;
 }
