@@ -14,12 +14,12 @@ export async function reviewCustomerAccount(_prev:ReviewState|null,form:FormData
  if(decision==="rejected"&&!note)return {message:"Provide a reason for declining the account."};
  try{
   const sql=db();
-  // Only actually verified Neon users may be approved or rejected.
+  // All registered customer accounts can be reviewed without email verification.
   // The authorization check is server-side and edits + audit entry are atomic.
   const rows=await sql`
    WITH eligible AS (
     SELECT u.id::text AS user_id,u.email FROM neon_auth."user" u
-    WHERE u.id::text=${userId} AND u."emailVerified"=true
+    WHERE u.id::text=${userId}
       AND NOT EXISTS (SELECT 1 FROM public.fim_admin_allowlist al WHERE lower(al.email)=lower(u.email))
     LIMIT 1
    ), reviewed AS (
@@ -35,9 +35,9 @@ export async function reviewCustomerAccount(_prev:ReviewState|null,form:FormData
     FROM reviewed RETURNING id
    )
    SELECT reviewed.status FROM reviewed JOIN audit ON true`;
-  if(!rows.length)return {message:"This account is not verified or cannot be reviewed."};
+  if(!rows.length)return {message:"This account could not be found or reviewed."};
   revalidatePath("/admin/accounts");revalidatePath("/admin");revalidatePath("/account");
-  return {ok:true,message:decision==="approved"?"Account approved. The customer may proceed after verification and payment enrollment opens.":"Account declined. Payment and playback are blocked for this account."};
+  return {ok:true,message:decision==="approved"?"Account approved. The customer may proceed when payment enrollment opens.":"Account declined. Payment and playback are blocked for this account."};
  }catch(error){
   console.error("[Fim Addis account review]",error instanceof Error?error.message:String(error));
   return {message:"Unable to save this account decision. Try again."};
