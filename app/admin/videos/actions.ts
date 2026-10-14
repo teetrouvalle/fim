@@ -2,43 +2,106 @@
 import {revalidatePath} from "next/cache";
 import {getAdminSession,db} from "../../../lib/admin";
 import {getVideoDiagnostics} from "../../../lib/bunny";
-type State={message:string;ok?:boolean};
-export async function importBunnyVideo(_state:State|null,form:FormData):Promise<State>{
- const admin=await getAdminSession();if(!admin)return {message:"Administrator login required."};
- const guid=String(form.get("guid")||"").trim();
- if(!/^[a-f0-9-]{36}$/i.test(guid))return {message:"Invalid Bunny video ID."};
- try{
-  const bunny=await getVideoDiagnostics();
-  const v=bunny.find(v=>v.guid===guid);
-  if(!v)return {message:"This video is not present in your Bunny library."};
-  const sql=db();
-  await sql`INSERT INTO public.fim_videos(bunny_guid,title,tier,published) VALUES(${v.guid},${v.title||"Untitled video"},'basic',false) ON CONFLICT(bunny_guid) DO NOTHING`;
-  await sql`INSERT INTO public.fim_audit_log(actor_email,action,details) VALUES(${admin.email},'video_imported',jsonb_build_object('guid',${guid}))`;
-  revalidatePath("/admin/videos");return {ok:true,message:"Video added as a private draft. Review rights and content rating before publishing."};
- }catch{return {message:"Could not import video. Check Bunny connectivity."}}
+
+type State={message:string;ok?:boolean;savedAt?:string};
+const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function failureMessage(error:unknown, operation:"import"|"save"){
+  console.error(`[Fim Addis Video Manager] ${operation} failed`,error instanceof Error?{name:error.name,message:error.message}:String(error));
+  return "The database could not "+(operation==="save"?"save these changes.":"import the video.")+" Please try again.";
 }
+
+export async function importBunnyVideo(_state:State|null,form:FormData):Promise<State>{
+ const admin=await getAdminSession();
+ if(!admin)return {message:"Your administrator session expired. Sign in again."};
+ const guid=String(form.get("guid")||"").trim();
+ if(!uuidPattern.test(guid))return {message:"Invalid Bunny Stream video ID."};
+ let bunny:Awaited<ReturnType<typeof getVideoDiagnostics>>;
+ try{bunny=await getVideoDiagnostics()}
+ catch{return {message:"Unable to reach Bunny Stream. The video wasn't imported. Please retry when Bunny is available."}}
+ const video=bunny.find(x=>x.guid.toLowerCase()===guid.toLowerCase());
+ if(!video)return {message:"Video not found in your Bunny Stream library. Refresh the page and try again."};
+ try{
+  const sql=db();
+  // Save the video and its audit record as one PostgreSQL operation. A conflict is not a successful import.
+  const result=await sql`
+   WITH added AS (
+     INSERT INTO public.fim_videos(bunny_guid,title,tier,published)
+     VALUES(${video.guid},${video.title?.trim()||"Untitled video"},'basic',false)
+     ON CONFLICT(bunny_guid) DO NOTHING RETURNING id
+   ), audit AS (
+     INSERT INTO public.fim_audit_log(actor_email,action,details)
+     SELECT ${admin.email},'video_imported',jsonb_build_object('video_id',id,'bunny_guid',${video.guid})
+     FROM added RETURNING id
+   )
+   SELECT added.id FROM added JOIN audit ON true`;
+  if(!result.length)return {message:"This Bunny video is already in the catalog. Find it under Catalog entries below."};
+  revalidatePath("/admin/videos");
+  return {ok:true,message:"Imported successfully. It is saved as a private draft; review its rights and rating before publishing."};
+ }catch(e){return {message:failureMessage(e,"import")}}
+}
+
 export async function updateVideo(_state:State|null,form:FormData):Promise<State>{
- const admin=await getAdminSession();if(!admin)return {message:"Administrator login required."};
- const id=String(form.get("id")||"");
+ const admin=await getAdminSession();
+ if(!admin)return {message:"Your administrator session expired. Sign in again."};
+ const id=String(form.get("id")||"").trim();
  const title=String(form.get("title")||"").trim().slice(0,180);
  const description=String(form.get("description")||"").trim().slice(0,2400);
  const tier=String(form.get("tier")||"basic");
  const rights=form.get("rights")==="yes";
  const rating=form.get("rating")==="yes";
- const published=form.get("published")==="yes";
- if(!/^[0-9a-f-]{36}$/i.test(id)||!title||!["basic","plus","premium","purchase_only"].includes(tier))return {message:"Invalid video details."};
- if(published&&(!rights||!rating))return {message:"Verify your distribution rights and age-rating review before publication."};
+ const requestedPublication=form.get("published")==="yes";
+ if(!uuidPattern.test(id)||!title||!["basic","plus","premium","purchase_only"].includes(tier))
+  return {message:"Enter a title and select a valid tier before saving."};
+ if(requestedPublication&&(!rights||!rating))
+  return {message:"Confirm distribution rights and the content-rating review before you publish."};
  try{
   const sql=db();
-  const video=await sql`SELECT bunny_guid FROM public.fim_videos WHERE id=${id}::uuid`;
-  if(!video.length)return {message:"Video not found."};
-  if(published){
-   const bunny=await getVideoDiagnostics();
-   if(bunny.find(v=>v.guid===video[0].bunny_guid)?.status!==4)return {message:"Bunny video is not ready for playback."};
+  const current=await sql`SELECT bunny_guid,published FROM public.fim_videos WHERE id=${id}::uuid LIMIT 1`;
+  if(!current.length)return {message:"This video was not found. Refresh the manager and retry."};
+
+  let publish=requestedPublication;
+  let publicationNote="";
+  // Check encoding ONLY when publishing a draft for the first time.
+  // Editing an already-published video must not fail because the Bunny API is temporarily unavailable.
+  if(requestedPublication&&!current[0].published){
+   try{
+    const library=await getVideoDiagnostics();
+    const item=library.find(x=>x.guid===current[0].bunny_guid);
+    if(!item||item.status!==4){
+     publish=false;
+     publicationNote=item?.status===5
+      ?" The Bunny encode has failed, so this video remains a draft."
+      :" Bunny hasn't confirmed that the video is ready, so it remains a draft.";
+    }
+   }catch{
+    publish=false;
+    publicationNote=" Bunny is temporarily unavailable. Changes were saved as a draft; try publishing again later.";
+   }
   }
-  await sql`UPDATE public.fim_videos SET title=${title},description=${description},tier=${tier},rights_verified=${rights},rating_reviewed=${rating},published=${published},updated_at=now() WHERE id=${id}::uuid`;
-  await sql`INSERT INTO public.fim_audit_log(actor_email,action,details) VALUES(${admin.email},'video_updated',jsonb_build_object('id',${id},'published',${published},'rights_verified',${rights},'rating_reviewed',${rating}))`;
-  revalidatePath("/admin/videos");revalidatePath("/videos");
-  return {ok:true,message:published?"Video listed in the approved catalog.":"Video changes saved."};
- }catch{return {message:"Unable to save. Verify all fields and try again."}}
+
+  // Keep saving metadata independent of a temporary Bunny API outage, with an atomic audit record.
+  const result=await sql`
+   WITH updated AS (
+    UPDATE public.fim_videos
+    SET title=${title},description=${description},tier=${tier},
+        rights_verified=${rights},rating_reviewed=${rating},
+        published=${publish},updated_at=now()
+    WHERE id=${id}::uuid
+    RETURNING id,updated_at,published
+   ), audit AS (
+    INSERT INTO public.fim_audit_log(actor_email,action,details)
+    SELECT ${admin.email},'video_updated',
+      jsonb_build_object('id',id,'published',published,'tier',${tier})
+    FROM updated RETURNING id
+   )
+   SELECT updated.id,updated.updated_at,updated.published FROM updated JOIN audit ON true`;
+  if(!result.length)return {message:"Video could not be updated. Refresh the page and retry."};
+  revalidatePath("/admin/videos");
+  revalidatePath("/videos");
+  revalidatePath(`/videos/${id}`);
+  const timestamp=new Date(result[0].updated_at).toISOString();
+  return {ok:true,savedAt:timestamp,message:publicationNote
+    ?"Video details saved."+publicationNote
+    :publish?"Video saved and published to the approved catalog.":"Video saved as a private draft."};
+ }catch(e){return {message:failureMessage(e,"save")}}
 }
