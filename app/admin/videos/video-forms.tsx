@@ -3,7 +3,7 @@ import {useActionState} from "react";
 import {importBunnyVideo,updateVideo} from "./actions";
 export function ImportVideo({guid,title,status}:{guid:string;title:string;status:number}){
  const [state,action,busy]=useActionState(importBunnyVideo,null);
- return <form action={action} className="import-row"><input type="hidden" name="guid" value={guid}/><div><strong>{title}</strong><p className="muted tiny">{guid} · {status===4?"Ready":status===5?"Failed":"Processing"}</p></div><button className="account-alt-button" disabled={busy}>Import as draft</button>{state?.message&&<p role="status" className="form-alert">{state.message}</p>}</form>
+ return <form action={action} className="import-row"><input type="hidden" name="guid" value={guid}/><div><strong>{title}</strong><p className="muted tiny">{guid} · {status===4?"Ready":status===5?"Failed":"Processing"}</p></div><button className="account-alt-button" disabled={busy}>{busy?"Importing…":"Import as draft"}</button>{state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}</form>
 }
 export function EditVideo({video}:{video:{id:string,title:string,description:string,tier:string,rights_verified:boolean,rating_reviewed:boolean,published:boolean}}){
  const [state,action,busy]=useActionState(updateVideo,null);
@@ -14,6 +14,6 @@ export function EditVideo({video}:{video:{id:string,title:string,description:str
  <label className="checkbox-line"><input type="checkbox" name="rights" value="yes" defaultChecked={video.rights_verified}/> I confirm we have legal distribution rights for this video.</label>
  <label className="checkbox-line"><input type="checkbox" name="rating" value="yes" defaultChecked={video.rating_reviewed}/> I have reviewed the content classification, age restrictions and eligibility.</label>
  <label className="checkbox-line"><input type="checkbox" name="published" value="yes" defaultChecked={video.published}/> List the video publicly when both reviews are complete.</label>
- {state?.message&&<p role="status" className="form-alert">{state.message}</p>}
- <button className="btn" disabled={busy}>Save video</button></form>
+ {state?.message&&<div role="status" aria-live="polite" className={state.ok?"save-confirmation":"form-alert"}><strong>{state.ok?"✓ ":""}{state.message}</strong>{state.ok&&state.savedAt&&<small style={{display:"block",marginTop:6}}>Saved in Neon · {new Date(state.savedAt).toLocaleString()}</small>}</div>}
+ <button className="btn" disabled={busy}>{busy?"Saving changes…":"Save changes"}</button></form>
 }
