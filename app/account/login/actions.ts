@@ -19,14 +19,14 @@ export async function memberSignUp(_state:{message:string}|null,form:FormData){
  try{
   const {error}=await auth.signUp.email({email,password,name});
   if(error)return {message:error.message||"Registration failed."};
-  const sent=await auth.emailOtp.sendVerificationOtp({email});
+  const sent=await auth.emailOtp.sendVerificationOtp({email,type:"email-verification"});
   return {message:sent.error?"Account created. Verification email is temporarily unavailable; you can use Google sign-in or retry verification.":"Account created. Enter your verification code in the Verify email tab."};
  }catch{return {message:"Account created or verification unavailable. Try signing in."}}
 }
 export async function memberRequestCode(_state:{message:string}|null,form:FormData){
  const email=String(form.get("email")||"").trim().toLowerCase();
  if(!email)return {message:"Enter your email first."};
- try{const {error}=await auth.emailOtp.sendVerificationOtp({email});return {message:error?(error.message||"Verification email is unavailable."):"If eligible, a verification code has been requested."}}catch{return {message:"Verification provider unavailable."}}
+ try{const {error}=await auth.emailOtp.sendVerificationOtp({email,type:"email-verification"});return {message:error?(error.message||"Verification email is unavailable."):"If eligible, a verification code has been requested."}}catch{return {message:"Verification provider unavailable."}}
 }
 export async function memberVerifyCode(_state:{message:string}|null,form:FormData){
  const email=String(form.get("email")||"").trim().toLowerCase();
