@@ -1,5 +1,5 @@
-import {revalidatePath} from "next/cache";
 "use server";
+import {revalidatePath} from "next/cache";
 import {auth} from "../../../lib/auth/server";
 import {redirect} from "next/navigation";
 import {loginPhone,registerPhone,signOutPhone} from "../../../lib/phone-auth";
