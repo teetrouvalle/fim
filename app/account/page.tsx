@@ -14,8 +14,8 @@ export default async function AccountPage(){
  return <main className="shell account-page"><div className="account-heading"><div><p className="eyebrow">FIM ADDIS</p><h1>My account</h1><p className="muted">{user.name} · {user.email}</p></div><form action={memberSignOut}><button className="account-alt-button">Sign out</button></form></div>
  <section className="account-review-banner" aria-label="Account verification and approval">
  <p className="eyebrow">ACCOUNT STATUS</p>
- <h2>{review.status==="approved"?"Account approved":review.status==="rejected"?"Account declined":review.status==="pending"?"Awaiting administrator approval":"Awaiting administrator approval"}</h2>
- <p className="muted">{review.status==="approved"?"Your account has been approved. Complete an eligible membership payment when enrollment is available to access the catalog.":review.status==="rejected"?"Your registration was declined. Please contact Fim Addis support if you believe this was a mistake.":review.status==="pending"?"An administrator will review your account before payments can be accepted. Choose your preferred membership while you wait.":"Your account is waiting for administrator review."}</p>
+ <h2>{review.status==="approved"?"Account approved":review.status==="rejected"?"Account declined":"Awaiting administrator approval"}</h2>
+ <p className="muted">{review.status==="approved"?"Your account has been approved. Complete an eligible membership payment when enrollment is available to access the catalog.":review.status==="rejected"?"Your registration was declined. Please contact Fim Addis support if you believe this was a mistake.":"An administrator will review your account before payments can be accepted. Choose your preferred membership while you wait."}</p>
  {review.status==="rejected"&&review.reviewNote&&<p className="muted">Reason: {review.reviewNote}</p>}
  </section>
  {!member&&<section className="admin-section"><p className="eyebrow">NEXT STEP</p><h2>Choose your membership</h2><p className="muted">Select a plan now. You'll only be able to submit payment after account approval and when enrollment is open.</p>
