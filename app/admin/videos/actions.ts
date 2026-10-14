@@ -47,6 +47,7 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
  const title=String(form.get("title")||"").trim().slice(0,180);
  const description=String(form.get("description")||"").trim().slice(0,2400);
  const tier=String(form.get("tier")||"basic");
+ const isFree=form.get("is_free")==="yes";
  const rights=form.get("rights")==="yes";
  const rating=form.get("rating")==="yes";
  const requestedPublication=form.get("published")==="yes";
@@ -82,14 +83,14 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
    WITH updated AS (
     UPDATE public.fim_videos
     SET title=${title},description=${description},tier=${tier},
-        rights_verified=${rights},rating_reviewed=${rating},
+        is_free=${isFree},rights_verified=${rights},rating_reviewed=${rating},
         published=${publish},updated_at=now()
     WHERE id=${id}::uuid
     RETURNING id,updated_at,published
    ), audit AS (
     INSERT INTO public.fim_audit_log(actor_email,action,details)
     SELECT ${admin.email},'video_updated',
-      jsonb_build_object('id',id,'published',published,'tier',${tier})
+      jsonb_build_object('id',id,'published',published,'tier',${tier},'is_free',${isFree})
     FROM updated RETURNING id
    )
    SELECT updated.id,updated.updated_at,updated.published FROM updated JOIN audit ON true`;
