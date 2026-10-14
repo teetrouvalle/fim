@@ -20,3 +20,19 @@ export async function signUpAdmin(_prev:{error:string}|null,form:FormData){
  try { await auth.sendVerificationEmail({email,callbackURL:"/admin"}); } catch { /* Verification can be requested from Neon if email provider is unavailable. */ }
  return {error:"Account created. Check your email for a verification message. Email verification must be enabled in Neon before dashboard access."};
 }
+
+export async function verifyAdminEmail(_prev:{error:string}|null,form:FormData){
+ const email=String(form.get("email")||"").trim().toLowerCase();
+ const otp=String(form.get("otp")||"").trim();
+ if(email!==(process.env.FIM_ADMIN_EMAIL||"").toLowerCase())return {error:"Unauthorized email."};
+ if(!/^\\d{4,8}$/.test(otp))return {error:"Enter the numeric verification code from your email."};
+ const {error}=await auth.emailOtp.verifyEmail({email,otp});
+ if(error)return {error:error.message||"Invalid or expired verification code."};
+ return {error:"Email verified. You can now sign in."};
+}
+export async function resendAdminCode(_prev:{error:string}|null,form:FormData){
+ const email=String(form.get("email")||"").trim().toLowerCase();
+ if(email!==(process.env.FIM_ADMIN_EMAIL||"").toLowerCase())return {error:"Unauthorized email."};
+ const {error}=await auth.sendVerificationEmail({email,callbackURL:"/admin"});
+ return {error:error?(error.message||"Unable to send verification code."):"A new verification code was requested. Check your inbox."};
+}
