@@ -6,7 +6,7 @@ import {db} from "./admin";
 
 const scryptAsync=promisify(scrypt);
 const COOKIE_NAME="fim_phone_session";
-const SESSION_SECONDS=60*60*24*7;
+const SESSION_SECONDS=60*60*24*30;
 const PHONE_PATTERN=/^\+[1-9][0-9]{7,14}$/;
 
 export function normalizePhone(value:string):string|null{
@@ -25,7 +25,7 @@ async function setPhoneCookie(userId:string){
  const token=randomBytes(32).toString("hex");
  const tokenHash=createHash("sha256").update(token).digest("hex");
  const sql=db();
- await sql`INSERT INTO public.fim_phone_sessions(token_hash,user_id,expires_at) VALUES(${tokenHash},${userId}::uuid,now()+interval '7 days')`;
+ await sql`INSERT INTO public.fim_phone_sessions(token_hash,user_id,expires_at) VALUES(${tokenHash},${userId}::uuid,now()+interval '30 days')`;
  const store=await cookies();
  store.set(COOKIE_NAME,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:SESSION_SECONDS});
 }

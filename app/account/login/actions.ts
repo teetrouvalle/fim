@@ -1,4 +1,5 @@
 "use server";
+import {revalidatePath} from "next/cache";
 import {auth} from "../../../lib/auth/server";
 import {redirect} from "next/navigation";
 import {loginPhone,registerPhone,signOutPhone} from "../../../lib/phone-auth";
@@ -19,7 +20,8 @@ export async function memberSignIn(_prev:{message:string}|null,form:FormData){
    await signOutPhone();
   }catch{return {message:"Sign-in service temporarily unavailable."}}
  }
- redirect("/videos");
+ revalidatePath("/");
+ redirect("/");
 }
 export async function memberSignUp(_prev:{message:string}|null,form:FormData){
  const {kind,identity,password}=credentials(form);
@@ -34,7 +36,7 @@ export async function memberSignUp(_prev:{message:string}|null,form:FormData){
    const {error}=await auth.signUp.email({email:identity.toLowerCase(),password,name});
    if(error)return {message:error.message||"Registration failed."};
    const result=await auth.signIn.email({email:identity.toLowerCase(),password});
-   if(result.error)return {message:"Account created. Sign in to browse free videos."};
+   if(result.error)return {message:"Account created. Sign in to continue to the homepage."};
    await signOutPhone();
   }catch{return {message:"Could not finish registration. Please sign in with your new account."}}
  }
@@ -42,7 +44,7 @@ export async function memberSignUp(_prev:{message:string}|null,form:FormData){
 }
 export async function memberGoogleLogin(){
  let url="";
- try{const {data,error}=await auth.signIn.social({provider:"google",callbackURL:"/videos"});if(error)return;url=data?.url||"";}catch{return}
+ try{const {data,error}=await auth.signIn.social({provider:"google",callbackURL:"/"});if(error)return;url=data?.url||"";}catch{return}
  if(url)redirect(url);
 }
 export async function memberSignOut(){

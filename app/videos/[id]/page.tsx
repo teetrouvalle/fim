@@ -1,3 +1,4 @@
+import CustomerTierHeader from "../../../components/customer-tier-header";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {createHash} from "node:crypto";
@@ -37,6 +38,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
   iframe=`https://player.mediadelivery.net/embed/${process.env.BUNNY_STREAM_LIBRARY_ID}/${guid}?token=${token}&expires=${expires}`;
  }
  return <main className="shell" style={{paddingTop:65,paddingBottom:95,maxWidth:1000}}>
+ <CustomerTierHeader/>
  <Link href="/videos" className="subtle-link">← Film library</Link>
  <p className="eyebrow" style={{marginTop:34}}>{free?"FREE TO WATCH":"FIM ADDIS MEMBERSHIP"}</p>
  <h1 className="page-title">{video.title}</h1><p className="muted">{video.description}</p>

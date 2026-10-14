@@ -1,3 +1,4 @@
+import CustomerTierHeader from "../../../components/customer-tier-header";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {getPlan} from "../../../lib/memberships";
@@ -15,6 +16,7 @@ export default async function Checkout({params}:{params:Promise<{plan:string}>})
  const canPay=enabled&&review?.status==="approved";
  const number=process.env.FIM_MPESA_NUMBER||"0707070707";const telegram=process.env.FIM_TELEGRAM_USERNAME||"keithify";
  return <main className="shell" style={{maxWidth:820,paddingTop:65,paddingBottom:90}}>
+ <CustomerTierHeader/>
  <Link href="/membership" className="muted">← Memberships</Link><p className="eyebrow" style={{marginTop:30}}>MEMBERSHIP CHECKOUT</p>
  <h1 className="page-title">{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h1><p className="muted">30 days per confirmed payment · manual M-PESA verification</p>
  <div className="account-panel" style={{marginTop:28}}><p className="eyebrow">Membership summary</p><h2>{Number(plan.priceEtb).toLocaleString()} ETB <small className="muted" style={{fontSize:14,fontWeight:400}}>/ 30 days</small></h2><ul className="feature-list">{plan.features.map(f=><li key={f.en}>{f.en}</li>)}</ul></div>

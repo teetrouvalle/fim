@@ -1,6 +1,8 @@
+import CustomerTierHeader from "../../components/customer-tier-header";
 import Link from "next/link";import { plans,priceText } from "../../lib/memberships";
 export const metadata={title:"Memberships | Fim Addis"};
 export default function MembershipPage(){return <main className="shell" style={{paddingTop:65,paddingBottom:95}}>
+ <CustomerTierHeader/>
  <Link className="muted" href="/">← Fim Addis</Link><p className="eyebrow" style={{marginTop:37}}>MEMBERSHIP</p>
  <h1 className="page-title">More than just watching.</h1>
  <p className="muted" style={{maxWidth:650,lineHeight:1.7}}>Explore the Basic, Plus, and Premium member experiences. Live broadcasts and events are offered only when scheduled; availability varies.</p>

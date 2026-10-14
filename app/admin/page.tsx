@@ -16,7 +16,7 @@ export default async function Admin(){
    WHERE coalesce(a.status,'pending')='pending' AND (u.email IS NULL OR NOT EXISTS(SELECT 1 FROM public.fim_admin_allowlist x WHERE lower(x.email)=lower(u.email)))`
  ]);
  return <main className="shell admin-dashboard">
- <header className="admin-header"><div><p className="eyebrow">FIM ADDIS / ፍም አዲስ</p><h1>Administration</h1><p className="muted">Signed in: {user.email}</p></div><Link href="/" className="subtle-link">View website ↗</Link></header>
+ <header className="admin-header"><div><p className="eyebrow">FIM ADDIS / ፍም አዲስ</p><h1>Administration</h1><p className="muted">Administrator dashboard</p></div><Link href="/" className="subtle-link">View website ↗</Link></header>
  <div className="admin-metrics">
  <article><span>Bunny video items</span><strong>{stats.connected?stats.total:"—"}</strong><small>{stats.connected?`${stats.ready} ready · ${stats.processing} processing`:"Connection unavailable"}</small></article>
  <article><span>Free films published</span><strong>{videos.filter(v=>v.published&&v.is_free).length}</strong><small>Public catalog · latest 40</small></article>
