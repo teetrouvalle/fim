@@ -17,6 +17,6 @@ export async function signUpAdmin(_prev:{error:string}|null,form:FormData){
  if(password.length<12)return {error:"Use a password of at least 12 characters."};
  const {error}=await auth.signUp.email({email,password,name:"Fim Addis Administrator"});
  if(error)return {error:error.message||"Unable to register administrator."};
- try { await auth.sendVerificationEmail({callbackURL:"/admin"}); } catch { /* Verification can be requested from Neon if email provider is unavailable. */ }
+ try { await auth.sendVerificationEmail({email,callbackURL:"/admin"}); } catch { /* Verification can be requested from Neon if email provider is unavailable. */ }
  return {error:"Account created. Check your email for a verification message. Email verification must be enabled in Neon before dashboard access."};
 }
