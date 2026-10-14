@@ -12,8 +12,9 @@ export default async function VideoManagement(){
  let library:Awaited<ReturnType<typeof getVideoDiagnostics>>=[];let unavailable=false;
  try{library=await getVideoDiagnostics()}catch{unavailable=true}
  const saved=new Set(videos.map(v=>v.bunny_guid));
+ const unimported=library.filter(item=>!saved.has(item.guid));
  return <main className="shell admin-dashboard"><Link href="/admin" className="subtle-link">← Dashboard</Link><p className="eyebrow" style={{marginTop:34}}>ADMINISTRATION</p><h1>Video management</h1><p className="muted">Import media from Bunny, review licensing and age classification, assign a tier, then publish. Published titles still require authenticated viewing and secured Bunny playback.</p>
- <section className="admin-section"><h2>Bunny Stream library</h2>{unavailable?<p>Bunny API unavailable. Check its credentials.</p>:library.length?library.filter(x=>!saved.has(x.guid)).map(x=><ImportVideo key={x.guid} guid={x.guid} title={x.title} status={x.status}/>):<p className="muted">No unimported Bunny videos found.</p>}</section>
+ <section className="admin-section"><h2>Bunny Stream library</h2>{unavailable?<p>Bunny API unavailable. Check its credentials.</p>:unimported.length?unimported.map(x=><ImportVideo key={x.guid} guid={x.guid} title={x.title} status={x.status}/>):<p className="muted">{library.length?"All Bunny videos are already imported. Select a catalog entry below to make changes.":"No Bunny videos found. Upload a video to your Bunny library and refresh this page."}</p>}</section>
  <section className="admin-section"><h2>Catalog entries</h2><div className="video-admin-grid">{videos.length?videos.map(v=><EditVideo key={v.id} video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>):<p className="muted">Import a video first to configure access.</p>}</div></section>
  </main>
 }
