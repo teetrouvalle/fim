@@ -1,42 +1,28 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getPlan } from "../../../lib/memberships";
-import { canAcceptPayment } from "../../../lib/publication-policy";
+import {notFound} from "next/navigation";
+import {getPlan} from "../../../lib/memberships";
+import {getViewer} from "../../../lib/member";
+import {db} from "../../../lib/admin";
+import {canAcceptPayment} from "../../../lib/publication-policy";
+import PaymentForm from "../payment-form";
+export const dynamic="force-dynamic";
 export default async function Checkout({params}:{params:Promise<{plan:string}>}){
- const {plan:id}=await params;
- const plan=getPlan(id);
- if(!plan)notFound();
- const enabled=canAcceptPayment();
- return <main className="shell" style={{maxWidth:760,paddingTop:70,paddingBottom:90}}>
-  <Link href="/#membership" className="muted">← Back to membership plans</Link>
-  <p className="eyebrow" style={{marginTop:30}}>FIM ADDIS MEMBERSHIP</p>
-  <h1 style={{fontSize:"clamp(35px,5vw,55px)",marginBottom:12}}>{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h1>
-  <p className="muted">Membership access for 30 days · M-PESA payment · manually verified</p>
-  <div className="plan" style={{minHeight:0,marginTop:28}}>
-   <span className="plan-count">MEMBERSHIP SUMMARY</span>
-   <h2 style={{fontSize:38,margin:"18px 0 6px"}}>{plan.priceEtb===null?"Price not set":plan.priceEtb.toLocaleString("en-US")+" ETB"} <span className="muted" style={{fontSize:14}}>/ month</span></h2>
-   <ul className="feature-list">{plan.features.map(f=><li key={f.en}>{f.en}</li>)}</ul>
-  </div>
-  <section aria-label="M-PESA payment details" className="checkout-note" style={{marginTop:24}}>
-   <h2 style={{fontSize:22,marginBottom:16}}>M-PESA payment details</h2>
-   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:16}}>
-    <div style={{padding:16,border:"1px solid var(--line)"}}>
-     <p className="muted" style={{fontSize:13,margin:0}}>M-PESA receiving number</p>
-     <strong style={{display:"block",marginTop:9}}>To be provided</strong>
-     <p className="muted" style={{fontSize:12,marginBottom:0}}>Placeholder — not a payment destination</p>
-    </div>
-    <div style={{padding:16,border:"1px solid var(--line)"}}>
-     <p className="muted" style={{fontSize:13,margin:0}}>Official Telegram receipt account</p>
-     <strong style={{display:"block",marginTop:9}}>To be provided</strong>
-     <p className="muted" style={{fontSize:12,marginBottom:0}}>Placeholder — no Telegram link is active</p>
-    </div>
-   </div>
-   <p className="muted" style={{fontSize:13,marginTop:17}}>Receipt upload on the website: not available yet. After launch, choose website upload or send proof through the official Telegram account, with manual payment verification.</p>
-  </section>
-  <section className="checkout-note" role="status">
-   <strong>{enabled?"Payment available":"Payment enrollment isn't open yet"}</strong>
-   <p>{enabled?"Continue using the authenticated payment workflow.":"This is a price preview only; no order or payment has been created. M-PESA checkout will open once the official receiving number, receipt submission, and manual approval workflow are configured."}</p>
-   <p>When checkout opens, you can submit your M-PESA transaction reference and receipt privately on the website or send proof to the verified Telegram account displayed here. Membership only activates after we verify the payment. Never send funds to a number or Telegram contact that has not been confirmed on this website.</p>
-  </section>
+ const {plan:id}=await params; const plan=getPlan(id);if(!plan)notFound();
+ const [viewer,flags]=await Promise.all([getViewer(),db()`SELECT value FROM public.fim_site_settings WHERE key='payments_open'`]);
+ const enabled=canAcceptPayment()&&flags[0]?.value==="true";
+ const number="0707070707";const telegram="keithify";
+ return <main className="shell" style={{maxWidth:820,paddingTop:65,paddingBottom:90}}>
+ <Link href="/membership" className="muted">← Memberships</Link><p className="eyebrow" style={{marginTop:30}}>MEMBERSHIP CHECKOUT</p>
+ <h1 className="page-title">{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h1><p className="muted">30 days per confirmed payment · manual M-PESA verification</p>
+ <div className="account-panel" style={{marginTop:28}}><p className="eyebrow">Membership summary</p><h2>{Number(plan.priceEtb).toLocaleString()} ETB <small className="muted" style={{fontSize:14,fontWeight:400}}>/ 30 days</small></h2><ul className="feature-list">{plan.features.map(f=><li key={f.en}>{f.en}</li>)}</ul></div>
+ <div className="payment-method-grid">
+ <section className="account-panel"><p className="eyebrow">M-PESA</p><h2>{number}</h2><p className="muted">Receiving mobile number</p></section>
+ <section className="account-panel"><p className="eyebrow">TELEGRAM RECEIPTS</p><h2>@{telegram}</h2><a href={`https://t.me/${telegram}`} target="_blank" rel="noopener noreferrer" className="subtle-link">Open Telegram ↗</a><p className="muted">Include your transaction ID and payment reference after submitting.</p></section>
+ </div>
+ {!enabled?<section className="checkout-note" role="status"><strong>Payments are not open yet</strong><p>The contact details above are configured, but do not send money yet. The film catalog, payment flow, and eligibility checks are being verified before enrollment opens. No order can be submitted while payments are closed.</p></section>
+ :!viewer?<section className="checkout-note"><strong>Sign in to proceed</strong><p>You need an account before submitting M-PESA proof.</p><Link href="/account/login" className="btn">Sign in or register →</Link></section>
+ :!viewer.verified?<section className="checkout-note"><strong>Verify your account</strong><p>Verify your email address before submitting payment.</p><Link href="/account/login" className="btn">Verify email →</Link></section>
+ :<PaymentForm plan={plan.id} telegram={telegram}/>}
+ <p className="disclaimer">M-PESA transfers must be independently confirmed by Fim Addis. Uploaded receipts and Telegram messages never activate membership automatically. Any payment dispute should be directed to the contact details displayed on this website. Purchase-only films are not included in membership plans.</p>
  </main>;
 }
