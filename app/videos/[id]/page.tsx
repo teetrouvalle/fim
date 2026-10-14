@@ -2,7 +2,7 @@ import Link from "next/link";
 import {notFound} from "next/navigation";
 import {createHash} from "node:crypto";
 import {db} from "../../../lib/admin";
-import {getViewer,getActiveMembership} from "../../../lib/member";
+import {getViewer,getEffectiveMembership} from "../../../lib/member";
 import {getAccountReview} from "../../../lib/account-approval";
 import {canAuthorizePlayback} from "../../../lib/publication-policy";
 import PlanPrompt from "../plan-prompt";
@@ -20,7 +20,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  if(!free){
   const user=await getViewer();
   if(user&&(await getAccountReview(user.id)).status==="approved"){
-   const membership=await getActiveMembership(user.id);
+   const membership=await getEffectiveMembership(user.id);
    const rank={basic:1,plus:2,premium:3}[String(video.tier) as "basic"|"plus"|"premium"]||99;
    const purchased=video.tier==="purchase_only"?await sql`SELECT 1 FROM public.fim_video_entitlements WHERE user_id=${user.id} AND video_id=${id}::uuid LIMIT 1`:[];
    entitled=Boolean((membership&&Number(membership.rank)>=rank)||purchased.length);

@@ -8,7 +8,7 @@ export const metadata={title:"Video management | Fim Addis",robots:{index:false,
 export default async function VideoManagement(){
  const admin=await getAdminSession();if(!admin)redirect("/admin/login");
  const sql=db();
- const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,rights_verified,rating_reviewed,published FROM public.fim_videos ORDER BY added_at DESC LIMIT 50`;
+ const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,thumbnail_bytes IS NOT NULL AS has_thumbnail,thumbnail_updated_at,rights_verified,rating_reviewed,published FROM public.fim_videos ORDER BY added_at DESC LIMIT 50`;
  let library:Awaited<ReturnType<typeof getVideoDiagnostics>>=[];let unavailable=false;
  try{library=await getVideoDiagnostics()}catch{unavailable=true}
  const saved=new Set(videos.map(v=>v.bunny_guid));
@@ -18,6 +18,6 @@ export default async function VideoManagement(){
  <section className="admin-section"><p className="eyebrow">PUBLIC CATALOG</p><h2>Free catalog</h2><p className="muted">Mark any imported Bunny video as Free in its editor below. Free films have no membership paywall, but still require distribution rights, age-classification review, and publication.</p>
  <p className="muted">{videos.filter(v=>v.is_free&&v.published).length} published free film(s) · {videos.filter(v=>v.is_free&&!v.published).length} free draft(s)</p>
  </section>
- <section className="admin-section"><p className="eyebrow">CATALOG ENTRIES</p><h2>Manage free and paid films</h2><div className="video-admin-grid">{videos.length?videos.map(v=><EditVideo key={v.id} video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>):<p className="muted">Import a video from Bunny first.</p>}</div></section>
+ <section className="admin-section"><p className="eyebrow">CATALOG ENTRIES</p><h2>Manage free and paid films</h2><div className="video-admin-grid">{videos.length?videos.map(v=><EditVideo key={v.id} video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>):<p className="muted">Import a video from Bunny first.</p>}</div></section>
  </main>;
 }

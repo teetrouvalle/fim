@@ -51,6 +51,23 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
  const rights=form.get("rights")==="yes";
  const rating=form.get("rating")==="yes";
  const requestedPublication=form.get("published")==="yes";
+ const removeThumbnail=form.get("remove_thumbnail")==="yes";
+ const upload=form.get("thumbnail");
+ const thumbnail=upload&&typeof upload!=="string"&&upload.size>0?upload:null;
+ if(thumbnail&&removeThumbnail)return {message:"Choose either a new thumbnail or Remove, not both."};
+ if(thumbnail&&thumbnail.size>500_000)return {message:"Thumbnail is too large. Use JPG, PNG or WebP under 500 KB."};
+ let thumbnailAction:"keep"|"replace"|"remove"=removeThumbnail?"remove":"keep";
+ let thumbnailData="";
+ let thumbnailMime:string|null=null;
+ if(thumbnail){
+  const data=Buffer.from(await thumbnail.arrayBuffer());
+  const hex=data.subarray(0,12).toString("hex");
+  thumbnailMime=hex.startsWith("ffd8ff")?"image/jpeg":hex.startsWith("89504e470d0a1a0a")?"image/png":
+   (data.subarray(0,4).toString("ascii")==="RIFF"&&data.subarray(8,12).toString("ascii")==="WEBP")?"image/webp":null;
+  if(!thumbnailMime)return {message:"Thumbnail must be a valid JPG, PNG or WebP image."};
+  thumbnailAction="replace";
+  thumbnailData=data.toString("base64");
+ }
  if(!uuidPattern.test(id)||!title||!["basic","plus","premium","purchase_only"].includes(tier))
   return {message:"Enter a title and select a valid tier before saving."};
  try{
@@ -84,13 +101,19 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
     UPDATE public.fim_videos
     SET title=${title},description=${description},tier=${tier},
         is_free=${isFree},rights_verified=${rights},rating_reviewed=${rating},
+        thumbnail_bytes=CASE WHEN ${thumbnailAction}='remove' THEN NULL
+          WHEN ${thumbnailAction}='replace' THEN decode(${thumbnailData},'base64')
+          ELSE thumbnail_bytes END,
+        thumbnail_mime=CASE WHEN ${thumbnailAction}='remove' THEN NULL
+          WHEN ${thumbnailAction}='replace' THEN ${thumbnailMime} ELSE thumbnail_mime END,
+        thumbnail_updated_at=CASE WHEN ${thumbnailAction}='keep' THEN thumbnail_updated_at ELSE now() END,
         published=${publish},updated_at=now()
     WHERE id=${id}::uuid
     RETURNING id,updated_at,published
    ), audit AS (
     INSERT INTO public.fim_audit_log(actor_email,action,details)
     SELECT ${admin.email},'video_updated',
-      jsonb_build_object('id',id,'published',published,'tier',${tier},'is_free',${isFree})
+      jsonb_build_object('id',id,'published',published,'tier',${tier},'is_free',${isFree},'thumbnail_action',${thumbnailAction})
     FROM updated RETURNING id
    )
    SELECT updated.id,updated.updated_at,updated.published FROM updated JOIN audit ON true`;
