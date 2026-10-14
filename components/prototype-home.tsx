@@ -10,7 +10,7 @@ const copy = {
     navDiscover: "Discover", navMembership: "Memberships", navAbout: "About",
     limited: "A NEW HOME FOR FILM", titleA: "Bold stories.", titleB: "A different way to watch.",
     intro: "Discover mature-rated films, special member broadcasts, and exclusive experiences curated for adults.",
-    launch: "MEMBERSHIPS", cta: "Explore videos", status: "Access begins after approval.",
+    launch: "MEMBERSHIPS", cta: "Explore videos", status: "Free films are open. Paid films require membership access.",
     browseTag: "THE LIBRARY", browse: "A space for stories.", browseText: "Films appear after licensing and ratings review. Browse the library and discover upcoming titles.",
     card1: "Featured films", card2: "New additions", card3: "Curated collections", pending: "Coming after review",
     tiersTag: "MEMBERSHIPS", tiers: "Choose how you watch.", tiersText: "Choose your experience: films, live sessions when scheduled, and VIP events. Payments are activated after administrator verification.",
@@ -22,7 +22,7 @@ const copy = {
     navDiscover: "ያስሱ", navMembership: "አባልነት", navAbout: "ስለ እኛ",
     limited: "አዲስ የፊልም መድረክ", titleA: "ልዩ ታሪኮች።", titleB: "አዲስ የመመልከቻ መንገድ።",
     intro: "ለአዋቂዎች የተዘጋጁ ፊልሞችን፣ የአባላት የቀጥታ ዝግጅቶችንና ልዩ ተሞክሮዎችን ያግኙ።",
-    launch: "አባልነት", cta: "ቪዲዮዎችን ያስሱ", status: "ፈቃድ ከተረጋገጠ በኋላ መመልከት ይቻላል።",
+    launch: "አባልነት", cta: "ቪዲዮዎችን ያስሱ", status: "ነፃ ፊልሞችን ያለ ክፍያ መመልከት ይችላሉ።",
     browseTag: "የፊልም ስብስብ", browse: "የታሪኮች ቦታ።", browseText: "ቪዲዮዎች የማሰራጨት ፈቃድና የዕድሜ ደረጃ ግምገማ ሲጠናቀቅ ይታያሉ።",
     card1: "ተመራጭ ፊልሞች", card2: "አዲስ የሚጨመሩ", card3: "የተመረጡ ስብስቦች", pending: "በቅርቡ",
     tiersTag: "አባልነት", tiers: "የመመልከቻ ምርጫዎ።", tiersText: "ከሶስት የአባልነት ደረጃዎች ይምረጡ። የፊልም ስብስብ፣ የቀጥታ ዝግጅቶችና ልዩ የአባላት ተሞክሮዎች።",
@@ -31,7 +31,7 @@ const copy = {
     footer: "የአባልነት ክፍያና የቪዲዮ መመልከቻ አገልግሎት የተፈላጊ ፈቃዶችና የደህንነት ምርመራ ሲጠናቀቅ ይከፈታል።", badge: "18+ ማሳሰቢያ"
   }
 } as const;
-export default function FimAddisHome() {
+export default function FimAddisHome({signedIn,currentTier}:{signedIn:boolean;currentTier:string}) {
   const [lang, setLang] = useState<Language>("en");
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   useEffect(() => {
@@ -60,12 +60,12 @@ export default function FimAddisHome() {
   }
   return <div className="shell">
     <header className="top">
-      <a href="#" className="brand" aria-label="Fim Addis home">
+      <a href="/" className="brand" aria-label="Fim Addis home">
         <span className="brand-mark">ፍ</span>
         <span className="brand-words"><strong>ፍም አዲስ</strong><small>FIM ADDIS</small></span>
       </a>
       <nav className="nav" aria-label="Main navigation">
-        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a><a href="/account/login">{lang==="am"?"ግባ":"Sign in"}</a><a href="/account/login?mode=signup">{lang==="am"?"ተመዝገብ":"Sign up"}</a>
+        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a>{signedIn?<><span className="member-tier-label" aria-label={`Current membership tier: ${currentTier}`}>{lang==="am"?"ደረጃዎ":"Your tier"}: <strong>{currentTier}</strong></span><a href="/account">{lang==="am"?"የእኔ መለያ":"My account"}</a></>:<><a href="/account/login">{lang==="am"?"ግባ":"Sign in"}</a><a href="/account/login?mode=signup">{lang==="am"?"ተመዝገብ":"Sign up"}</a></>}
       </nav>
       <div className="header-tools">
         <button type="button" aria-label="Switch language" onClick={changeLang}>{lang === "en" ? "አማ" : "EN"}</button>
@@ -78,7 +78,7 @@ export default function FimAddisHome() {
           <p className="eyebrow"><span className="red-line"></span>{t.limited}</p>
           <h1>{t.titleA}<br/><em>{t.titleB}</em></h1>
           <p className="hero-body">{t.intro}</p>
-          <div className="hero-actions"><a className="btn" href="/account/login?mode=signup">{lang==="am"?"መለያ ፍጠር":"Create your account"} <span aria-hidden="true">↗</span></a><a href="/account/login" className="subtle-link">{lang==="am"?"ግባ":"Already a member? Sign in →"}</a><span className="muted tiny">{t.status}</span></div>
+          <div className="hero-actions">{signedIn?<><a className="btn" href="/videos">{lang==="am"?"ፊልሞችን ያስሱ":"Explore films"} <span aria-hidden="true">↗</span></a><a href="/account" className="subtle-link">{lang==="am"?"የእኔ መለያ":"My account →"}</a></>:<><a className="btn" href="/account/login?mode=signup">{lang==="am"?"መለያ ፍጠር":"Create your account"} <span aria-hidden="true">↗</span></a><a href="/account/login" className="subtle-link">{lang==="am"?"ግባ":"Already a member? Sign in →"}</a></>}<span className="muted tiny">{t.status}</span></div>
         </div>
         <div className="hero-art" aria-hidden="true"><div className="hero-art-frame"><div className="art-cross">F<br/>A</div><div className="art-side">ፍም አዲስ • FIM ADDIS</div></div><div className="corner-accent"/></div>
       </section>
