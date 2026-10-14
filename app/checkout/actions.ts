@@ -27,6 +27,8 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
   const sql=db();
   const available=await sql`SELECT value FROM public.fim_site_settings WHERE key='payments_open' LIMIT 1`;
   if(available[0]?.value!=="true")return {message:"Payments are temporarily unavailable. Do not transfer money yet."};
+  const recent=await sql`SELECT count(*)::int AS count FROM public.fim_payment_reviews WHERE account_user_id=${user.id} AND created_at>now()-interval '24 hours'`;
+  if(Number(recent[0]?.count||0)>=3)return {message:"Maximum three payment submissions per day. Contact support if you need a correction."};
   const plans=await sql`SELECT price_etb FROM public.fim_plans WHERE id=${plan}`;
   const amount=plans[0]?.price_etb;
   if(!Number.isInteger(Number(amount))||Number(amount)<=0)return {message:"Plan not available."};
