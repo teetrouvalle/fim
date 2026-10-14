@@ -1,10 +1,8 @@
 "use client";
 import {useActionState,useState} from "react";
-import {useSearchParams} from "next/navigation";
 import {memberSignIn,memberSignUp,memberRequestCode,memberVerifyCode,memberGoogleLogin} from "./actions";
-export default function MemberLoginForm(){
- const search=useSearchParams();
- const [tab,setTab]=useState<"signin"|"signup"|"verify">(search.get("mode")==="signup"?"signup":"signin");
+export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"signin"|"signup"|"verify"}){
+ const [tab,setTab]=useState<"signin"|"signup"|"verify">(initialTab);
  const [a,aAction,aPending]=useActionState(memberSignIn,null);
  const [b,bAction,bPending]=useActionState(memberSignUp,null);
  const [c,cAction,cPending]=useActionState(memberVerifyCode,null);
