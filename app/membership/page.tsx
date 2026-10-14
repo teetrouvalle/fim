@@ -9,5 +9,5 @@ export default function MembershipPage(){return <main className="shell" style={{
   <p className="muted">Per month</p><ul className="feature-list">{p.features.map(f=><li key={f.en}>{f.en}</li>)}</ul>
   <Link className="btn" href={"/checkout/"+p.id}>View membership <span aria-hidden>↗</span></Link>
  </article>)}</div>
- <p className="disclaimer">Individual purchase-only titles are not included in any subscription. Virtual meetups are moderated; in-person gatherings are lawful, non-sexual fan events and require separate confirmation. Live programming is subject to published schedules. Payments require administrator verification.</p>
+ <p className="disclaimer">Individual purchase-only titles are not included in any subscription. Virtual meetups are moderated; in-person gatherings are lawful, non-sexual fan events and require separate confirmation. Live programming is subject to published schedules. M-PESA receipts will be accepted through secure website upload or the official Telegram contact once payment enrollment opens. All payments require administrator verification before access.</p>
  </main>;}
