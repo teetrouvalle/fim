@@ -52,18 +52,16 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
  const requestedPublication=form.get("published")==="yes";
  if(!uuidPattern.test(id)||!title||!["basic","plus","premium","purchase_only"].includes(tier))
   return {message:"Enter a title and select a valid tier before saving."};
- if(requestedPublication&&(!rights||!rating))
-  return {message:"Confirm distribution rights and the content-rating review before you publish."};
  try{
   const sql=db();
   const current=await sql`SELECT bunny_guid,published FROM public.fim_videos WHERE id=${id}::uuid LIMIT 1`;
   if(!current.length)return {message:"This video was not found. Refresh the manager and retry."};
 
-  let publish=requestedPublication;
-  let publicationNote="";
+  let publish=requestedPublication&&rights&&rating;
+  let publicationNote=requestedPublication&&!publish?" Publication is off until distribution rights and content-rating review are confirmed.":"";
   // Check encoding ONLY when publishing a draft for the first time.
   // Editing an already-published video must not fail because the Bunny API is temporarily unavailable.
-  if(requestedPublication&&!current[0].published){
+  if(publish&&!current[0].published){
    try{
     const library=await getVideoDiagnostics();
     const item=library.find(x=>x.guid===current[0].bunny_guid);
