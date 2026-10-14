@@ -25,7 +25,7 @@ export async function verifyAdminEmail(_prev:{error:string}|null,form:FormData){
  const email=String(form.get("email")||"").trim().toLowerCase();
  const otp=String(form.get("otp")||"").trim();
  if(email!==(process.env.FIM_ADMIN_EMAIL||"").toLowerCase())return {error:"Unauthorized email."};
- if(!/^\\d{4,8}$/.test(otp))return {error:"Enter the numeric verification code from your email."};
+ if(!/^[0-9]{4,8}$/.test(otp))return {error:"Enter the numeric verification code from your email."};
  const {error}=await auth.emailOtp.verifyEmail({email,otp});
  if(error)return {error:error.message||"Invalid or expired verification code."};
  return {error:"Email verified. You can now sign in."};
