@@ -3,25 +3,24 @@ import {redirect} from "next/navigation";
 import {db} from "../../lib/admin";
 import {getViewer,getActiveMembership} from "../../lib/member";
 import {getAccountReview} from "../../lib/account-approval";
-import {plans,priceText} from "../../lib/memberships";
 import {memberSignOut} from "./login/actions";
 export const dynamic="force-dynamic";
 export const metadata={title:"My Account | Fim Addis",robots:{index:false,follow:false}};
 export default async function AccountPage(){
  const user=await getViewer();if(!user)redirect("/account/login");
  const sql=db();
- const [member,payments,review]=await Promise.all([getActiveMembership(user.id),sql`SELECT id,plan_id,amount_etb,status,receipt_channel,created_at,review_note FROM public.fim_payment_reviews WHERE account_user_id=${user.id} ORDER BY created_at DESC LIMIT 30`,getAccountReview(user.id)]);
- return <main className="shell account-page"><div className="account-heading"><div><p className="eyebrow">FIM ADDIS</p><h1>My account</h1><p className="muted">{user.name} · {user.email}</p></div><form action={memberSignOut}><button className="account-alt-button">Sign out</button></form></div>
- <section className="account-review-banner" aria-label="Account verification and approval">
- <p className="eyebrow">ACCOUNT STATUS</p>
- <h2>{review.status==="approved"?"Account approved":review.status==="rejected"?"Account declined":"Awaiting administrator approval"}</h2>
- <p className="muted">{review.status==="approved"?"Your account has been approved. Complete an eligible membership payment when enrollment is available to access the catalog.":review.status==="rejected"?"Your registration was declined. Please contact Fim Addis support if you believe this was a mistake.":"An administrator will review your account before payments can be accepted. Choose your preferred membership while you wait."}</p>
- {review.status==="rejected"&&review.reviewNote&&<p className="muted">Reason: {review.reviewNote}</p>}
+ const [membership,payments,review]=await Promise.all([
+  getActiveMembership(user.id),
+  sql`SELECT id,plan_id,amount_etb,status,receipt_channel,created_at,review_note FROM public.fim_payment_reviews WHERE account_user_id=${user.id} ORDER BY created_at DESC LIMIT 30`,
+  getAccountReview(user.id)
+ ]);
+ return <main className="shell account-page">
+ <div className="account-heading"><div><p className="eyebrow">FIM ADDIS</p><h1>My account</h1><p className="muted">{user.name} · {user.phone||user.email}</p></div><form action={memberSignOut}><button className="account-alt-button">Sign out</button></form></div>
+ <section className="account-summary">
+ <div className="account-panel"><p className="eyebrow">EXPLORE</p><h2>Discover films</h2><p className="muted">Browse our free catalog and discover member-only releases. No subscription is required for free titles.</p><Link href="/videos" className="btn">Browse the film library →</Link></div>
+ <div className="account-panel"><p className="eyebrow">MEMBERSHIP</p><h2>{membership?String(membership.plan_id).toUpperCase():"No active plan"}</h2><p className="muted">{membership?"Active until "+new Date(membership.expires_at).toLocaleDateString("en-GB"):"A membership is only needed for paid content."}</p>{membership&&<Link href="/membership" className="subtle-link">View plan options →</Link>}</div>
  </section>
- {!member&&<section className="admin-section"><p className="eyebrow">NEXT STEP</p><h2>Choose your membership</h2><p className="muted">Select a plan now. You'll only be able to submit payment after account approval and when enrollment is open.</p>
- <div className="account-plan-grid">{plans.map(p=><article className="account-panel" key={p.id}><p className="eyebrow">{p.id.toUpperCase()}</p><h3>{priceText(p)} <small className="muted">/ 30 days</small></h3><Link href={"/checkout/"+p.id} className="btn">Choose {p.id} →</Link></article>)}</div>
- </section>}
- <section className="account-summary"><div className="account-panel"><span className="eyebrow">Current membership</span><h2>{member?String(member.plan_id).toUpperCase():"No active plan"}</h2><p className="muted">{member?"Valid until "+new Date(member.expires_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}):"Pick a membership to unlock approved catalog titles after payment confirmation."}</p><Link href="/membership" className="subtle-link">View memberships →</Link></div><div className="account-panel"><span className="eyebrow">Watch</span><h2>Film library</h2><p className="muted">Availability depends on approved catalog items and your active membership.</p><Link href="/videos" className="subtle-link">Browse videos →</Link></div></section>
- <section className="admin-section"><h2>Payment submissions</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Submitted</th><th>Plan</th><th>Amount</th><th>Proof</th><th>Status</th></tr></thead><tbody>{payments.length?payments.map(p=><tr key={p.id}><td>{new Date(p.created_at).toLocaleDateString("en-GB")}</td><td>{p.plan_id}</td><td>{Number(p.amount_etb).toLocaleString()} ETB</td><td>{p.receipt_channel}</td><td>{p.status}{p.status==="rejected"&&p.review_note?" — "+p.review_note:""}</td></tr>):<tr><td colSpan={5}>You haven't submitted a payment yet.</td></tr>}</tbody></table></div></section>
- </main>
+ <section className="account-review-banner"><p className="eyebrow">ACCOUNT REVIEW</p><h2>{review.status==="approved"?"Approved":review.status==="rejected"?"Declined":"Pending administrator review"}</h2><p className="muted">{review.status==="approved"?"You may purchase memberships when payment enrollment opens. Free videos remain available.":review.status==="rejected"?"Your account is not eligible to purchase paid access. You can still browse publicly available free films.":"You may browse free films now. The administrator will review your registration before you can purchase a membership."}</p>{review.status==="rejected"&&review.reviewNote&&<p className="muted">Reason: {review.reviewNote}</p>}</section>
+ <section className="admin-section"><h2>Payment history</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Submitted</th><th>Plan</th><th>Amount</th><th>Receipt via</th><th>Status</th></tr></thead><tbody>{payments.length?payments.map(p=><tr key={p.id}><td>{new Date(p.created_at).toLocaleDateString("en-GB")}</td><td>{p.plan_id}</td><td>{Number(p.amount_etb).toLocaleString()} ETB</td><td>{p.receipt_channel}</td><td>{p.status}</td></tr>):<tr><td colSpan={5}>No payments submitted.</td></tr>}</tbody></table></div></section>
+ </main>;
 }
