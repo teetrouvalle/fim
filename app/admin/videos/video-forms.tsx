@@ -1,7 +1,14 @@
 "use client";
 import {useActionState} from "react";
 import Image from "next/image";
-import {importBunnyVideo,updateVideo} from "./actions";
+import {importBunnyVideo,updateVideo,syncBunnyUploads} from "./actions";
+export function SyncBunnyUploads(){
+ const [state,action,busy]=useActionState(syncBunnyUploads,null);
+ return <form action={action} className="admin-form" style={{marginTop:18,marginBottom:22}}>
+  <button type="submit" className="btn" style={{alignSelf:"flex-start"}} disabled={busy}>{busy?"Syncing Bunny uploads…":"Sync all Bunny uploads as drafts →"}</button>
+  {state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}
+ </form>;
+}
 export function ImportVideo({guid,title,status}:{guid:string;title:string;status:number}){
  const [state,action,busy]=useActionState(importBunnyVideo,null);
  return <form action={action} className="import-row"><input type="hidden" name="guid" value={guid}/><div><strong>{title}</strong><p className="muted tiny">{guid} · {status===4?"Ready":status===5?"Failed":"Processing"}</p></div><button className="account-alt-button" disabled={busy}>{busy?"Importing…":"Import as draft"}</button>{state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}</form>

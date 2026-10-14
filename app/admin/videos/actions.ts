@@ -40,6 +40,46 @@ export async function importBunnyVideo(_state:State|null,form:FormData):Promise<
  }catch(e){return {message:failureMessage(e,"import")}}
 }
 
+/** Import newly uploaded videos into Fim Addis as unpublished drafts, never public automatically. */
+export async function syncBunnyUploads(_state:State|null):Promise<State>{
+ const admin=await getAdminSession();
+ if(!admin)return {message:"Sign in to the administrator dashboard before syncing Bunny uploads."};
+ let uploads:Awaited<ReturnType<typeof getVideoDiagnostics>>;
+ try{uploads=await getVideoDiagnostics()}
+ catch(error){
+  const msg=error instanceof Error?error.message:"Bunny Stream did not respond.";
+  console.error("[Fim Addis video sync]",msg);
+  return {message:msg+" Check that Bunny library ID and its matching Stream API key are configured in Vercel."};
+ }
+ if(!uploads.length)return {message:"Bunny returned no videos for the configured library. Compare its Library ID in Bunny with the one shown on this page."};
+ const valid=uploads.filter(x=>uuidPattern.test(x.guid));
+ if(!valid.length)return {message:"Bunny responded, but no valid video IDs were available."};
+ try{
+  const sql=db();
+  const guids=valid.map(x=>x.guid);
+  const titles=valid.map(x=>String(x.title||"Untitled video").trim().slice(0,180)||"Untitled video");
+  const result=await sql`
+   WITH incoming AS (
+     SELECT guid, title FROM unnest(${guids}::text[],${titles}::text[]) AS incoming(guid,title)
+   ), added AS (
+     INSERT INTO public.fim_videos(bunny_guid,title,tier,published,is_free,rights_verified,rating_reviewed)
+     SELECT guid,title,'basic',false,false,false,false FROM incoming
+     ON CONFLICT(bunny_guid) DO NOTHING RETURNING id,bunny_guid
+   ), audit AS (
+     INSERT INTO public.fim_audit_log(actor_email,action,details)
+     SELECT ${admin.email},'video_imported',jsonb_build_object('video_id',id,'bunny_guid',bunny_guid,'method','bulk_sync')
+     FROM added RETURNING id
+   )
+   SELECT count(*)::int AS imported FROM audit`;
+  const imported=Number(result[0]?.imported||0);
+  revalidatePath("/admin/videos");
+  revalidatePath("/videos");
+  return {ok:true,message:imported
+   ?`Synced Bunny: ${imported} new video(s) imported as drafts. Scroll to Manage free and paid films, review each video, and publish when ready.`
+   :`All ${valid.length} Bunny video(s) are already imported. Open their catalog entries below and ensure Published, distribution rights, and content-rating review are checked.`};
+ }catch(error){return {message:failureMessage(error,"import")}}
+}
+
 export async function updateVideo(_state:State|null,form:FormData):Promise<State>{
  const admin=await getAdminSession();
  if(!admin)return {message:"Your administrator session expired. Sign in again."};
