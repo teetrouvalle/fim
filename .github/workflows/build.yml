@@ -1,0 +1,22 @@
+name: Build verification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+        env:
+          FIM_CHECK_BUNNY_AT_BUILD: '0'
+          NEON_AUTH_BASE_URL: https://example.invalid/neondb/auth
+          NEON_AUTH_COOKIE_SECRET: temporary-build-only-not-for-deployments
+          DATABASE_URL: postgres://placeholder:placeholder@localhost:5432/neondb
