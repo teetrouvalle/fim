@@ -1,54 +1,30 @@
-# Fim Addis — Manual Payment Approval (MVP)
+# Fim Addis manual M-PESA payment flow
 
-**Status:** Approved product specification. This file is not a working payment integration.
+**Implementation:** The routes exist; production collection is disabled until verification and launch sign-off.
 
-## Non-negotiable business rule
-All payments are verified **manually** by an authorized Fim Addis administrator. An uploaded receipt or customer-entered transaction reference is never sufficient to unlock a video. There is no bank API, Stripe, Chapa, or automatic payment verification in the MVP.
+**Tiers:** Basic 599 ETB, Plus 999 ETB, Premium 1,499 ETB, each covering 30 days upon administrator approval.
 
-Once an admin verifies actual receipt of funds and selects **Approve**, the system grants the corresponding video entitlement or membership automatically. Automatic payment status emails are deferred.
+**Receiving number:** 0707070707 (supplied by the operator; not independently verified). **Telegram:** @keithify (supplied by operator; not independently verified).
 
-## Customer journey
-1. Authenticated user chooses a priced individual video or a Basic/Plus/Premium membership plan.
-2. Server creates an immutable order snapshot with item, exact amount, currency (ETB or USD), duration, and unique order reference.
-3. UI displays configured payment instructions for that currency. USD checkout is unavailable until a valid USD-compatible payment method is configured.
-4. Customer transfers funds independently, uploads a receipt to a **private** storage bucket, and submits transaction reference.
-5. Order is marked `pending_review`; user sees that state on the dashboard. **No access is granted.**
-6. Authorized admin reviews the details and independently confirms settlement with the relevant account.
-7. Admin approves or rejects with an optional/required explanation as appropriate.
-8. Approved order immediately grants the product entitlement via a single atomic/idempotent database operation. Rejection never grants access; user can view the rejection reason.
+## Customer procedure
+1. Register/login using a Neon-verified email identity.
+2. Choose a tier at /membership and review /checkout/{plan}.
+3. When payments are open, pay the amount to the verified receiving number, obtain the M-PESA transaction ID.
+4. Submit the transaction ID and either a PNG/JPG/PDF file (max 900 KB) privately on the website, or choose Telegram and send the receipt to @keithify referencing the transaction.
+5. Payment starts as pending. Nothing grants access automatically.
+6. Admin independently confirms settlement in the actual M-PESA receiving account and clicks Approve (or Reject with reason) at /admin/payments.
+7. The Postgres function records the decision and grants a 30-day membership, extending any remaining paid period. It records an audit log. Replays are idempotent and transaction locking prevents duplicate extensions.
+8. User checks membership status at /account. Videos must also be published, rights-reviewed and protected by signed Bunny playback.
 
-## Admin interface
-`/admin/payments`: pending/approved/rejected filters; order reference; user; product; currency; amount; receipt (authorized private view); transaction reference; submitted date; bank verification checklist; Approve; Reject; rejection reason; admin identity and action timestamp.
+## Data protection
+- Payment details derive from the pricing table; users cannot choose the price.
+- All uploads are stored in the private Neon database, not returned through any unauthenticated public endpoint. Receipt viewing requires a verified administrator session. Use private object storage for larger-scale production before volume grows.
+- Daily submission rate limit: 3 per user; duplicate transaction IDs blocked.
+- No automated payment gateway, Telegram bot, or direct bank reconciliation. Telegram is manual; no confirmation through Telegram is trustworthy without matching M-PESA receipt of funds.
+- Emails about payment decisions and refunds are not automated.
+- Approval and video streaming must be kept off until licensed catalog and security are tested.
 
-## State machine
-- `awaiting_payment` -> `pending_review` when a receipt is submitted
-- `pending_review` -> `approved` only through server-side admin approval
-- `pending_review` -> `rejected` only through server-side admin rejection
-- Rejected submissions may be replaced with a newly recorded attempt under carefully controlled rules.
-- Never grant access in any other state.
+## Safety and launch
+`FIM_PAYMENTS_OPEN` must be true and `fim_site_settings.payments_open` must also be true for payment submission. The default is false. `FIM_PLAYBACK_OPEN` and `fim_site_settings.playback_open` are also off by default. These dual controls ensure frontend publication alone does not collect payment or unlock videos.
 
-## Security and consistency
-- Server-side `requireAdmin()` for **every** approval/rejection operation; do not trust browser-provided roles.
-- User receipts in private Supabase Storage; no public permanent URLs. Users see only their own orders/receipts; admins have restricted review privileges.
-- Preserve approved order price and currency; clients cannot edit them.
-- Use a single PostgreSQL transaction for status change, entitlement/membership creation, and audit record. Lock/check the order; repeated requests must have no second effect.
-- Unique constraints/idempotency prevent double entitlement and double membership extension.
-- Basic < Plus < Premium. Purchase-only videos are excluded from all subscriptions.
-- Individually purchased video entitlement has no time limit while the content remains available.
-- Subscription duration is configurable per plan. Renewals must preserve unused paid time.
-- Payment verification is **human**, and payment confirmation emails are **not sent** by the MVP.
-
-## Required verification tests
-1. Pending or rejected order never unlocks content.
-2. Normal user cannot call approve/reject operations.
-3. Approved order unlocks precisely the purchased product or correct subscription.
-4. Double-click and concurrent approve calls grant access only once.
-5. Rejection preserves denial of access and shows reason to buyer.
-6. One customer's receipt and bank details cannot be viewed by another customer.
-7. Price/currency/order ownership cannot be overridden from the browser.
-8. Admin actions are audit logged.
-
-## Future work (excluded from launch)
-- Automated card/mobile-money payments
-- Payment-confirmation/rejection emails
-- Bank API reconciliation
+Neon Managed Better Auth shared SMTP currently needs verification configuration; use your own production SMTP. External verification and hosting licensing are not code-only tasks.
