@@ -110,3 +110,8 @@
 .account-review-form{margin-top:14px}
 .account-review-form .review-buttons{margin-bottom:2px}
 @media(max-width:780px){.account-plan-grid{grid-template-columns:1fr}}
+
+.account-onboarding-next{border:1px solid var(--line);background:var(--surface);padding:17px;margin-top:12px;display:flex;align-items:start;flex-direction:column;gap:10px}
+.account-onboarding-next p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}
+.account-onboarding-next .btn,.account-onboarding-next .account-alt-button{width:100%}
+.admin-pagination{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin:25px 0 35px;font-size:13px}
