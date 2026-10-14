@@ -21,7 +21,7 @@ export default async function VideosPage(){
  <Link className="muted" href="/">← Fim Addis</Link><p className="eyebrow" style={{marginTop:35}}>FILM LIBRARY</p><h1 className="page-title">Discover the films.</h1>
  <p className="muted" style={{maxWidth:680,lineHeight:1.8}}>Watch free selections without a subscription. Choose a membership only when you want to unlock a paid title.</p>
  <section className="admin-section"><div className="library-heading"><div><p className="eyebrow">FREE CATALOG</p><h2>Watch for free</h2></div><span className="muted">{free.length} title(s)</span></div>
- {free.length?<Grid items={free}/>:<p className="muted"><div style="position:relative;padding-top:56.25%;"><iframe src="https://player.mediadelivery.net/embed/778486/2e118fea-272d-4b2f-8a46-76cebaf936a6?autoplay=true&loop=false&muted=true&preload=true&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>.</p>}</section>
+ {free.length?<Grid items={free}/>:<p className="muted">Free films are being prepared. To add a free video, import it from Bunny Stream in Admin → Video Management, mark it Free, complete the publishing reviews, and save.</p>}</section>
  <section className="admin-section"><div className="library-heading"><div><p className="eyebrow">MEMBER CATALOG</p><h2>More to discover</h2></div><Link href="/membership" className="subtle-link">Compare plans →</Link></div>
  {paid.length?<Grid items={paid}/>:<p className="muted">Additional member titles will appear here once approved.</p>}</section>
  </main>;
