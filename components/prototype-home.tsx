@@ -65,7 +65,7 @@ export default function FimAddisHome() {
         <span className="brand-words"><strong>ፍም አዲስ</strong><small>FIM ADDIS</small></span>
       </a>
       <nav className="nav" aria-label="Main navigation">
-        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a><a href="/account">{lang==="am"?"መለያ":"My account"}</a>
+        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a><a href="/account/login">{lang==="am"?"ግባ":"Sign in"}</a><a href="/account/login?mode=signup">{lang==="am"?"ተመዝገብ":"Sign up"}</a>
       </nav>
       <div className="header-tools">
         <button type="button" aria-label="Switch language" onClick={changeLang}>{lang === "en" ? "አማ" : "EN"}</button>
@@ -78,7 +78,7 @@ export default function FimAddisHome() {
           <p className="eyebrow"><span className="red-line"></span>{t.limited}</p>
           <h1>{t.titleA}<br/><em>{t.titleB}</em></h1>
           <p className="hero-body">{t.intro}</p>
-          <div className="hero-actions"><a className="btn" href="/videos">{t.cta} <span aria-hidden="true">↗</span></a><span className="muted tiny">{t.status}</span></div>
+          <div className="hero-actions"><a className="btn" href="/account/login?mode=signup">{lang==="am"?"መለያ ፍጠር":"Create your account"} <span aria-hidden="true">↗</span></a><a href="/account/login" className="subtle-link">{lang==="am"?"ግባ":"Already a member? Sign in →"}</a><span className="muted tiny">{t.status}</span></div>
         </div>
         <div className="hero-art" aria-hidden="true"><div className="hero-art-frame"><div className="art-cross">F<br/>A</div><div className="art-side">ፍም አዲስ • FIM ADDIS</div></div><div className="corner-accent"/></div>
       </section>
