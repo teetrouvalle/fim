@@ -1,12 +1,14 @@
 "use server";
 import {revalidatePath} from "next/cache";
 import {getVerifiedViewer} from "../../lib/member";
+import {accountIsApproved} from "../../lib/account-approval";
 import {db} from "../../lib/admin";
 export type SubmissionState={message:string;reference?:string;ok?:boolean};
 const MAX_RECEIPT=900_000;
 export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormData):Promise<SubmissionState>{
  if(process.env.FIM_PAYMENTS_OPEN!=="true")return {message:"Payments are not open yet. Please don't transfer funds."};
  const user=await getVerifiedViewer();if(!user)return {message:"Please sign in with a verified email before submitting payment proof."};
+ if(!await accountIsApproved(user.id))return {message:"Your verified account must be approved by an administrator before payment submission."};
  const plan=String(form.get("plan")||"").toLowerCase();
  const channel=String(form.get("channel")||"website");
  const transaction=String(form.get("transaction")||"").trim().toUpperCase();
