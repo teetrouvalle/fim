@@ -17,7 +17,7 @@ export async function signUpAdmin(_prev:{error:string}|null,form:FormData){
  if(password.length<12)return {error:"Use a password of at least 12 characters."};
  const {error}=await auth.signUp.email({email,password,name:"Fim Addis Administrator"});
  if(error)return {error:error.message||"Unable to register administrator."};
- try { await auth.sendVerificationEmail({email,callbackURL:"/admin"}); } catch { /* Verification can be requested from Neon if email provider is unavailable. */ }
+ try { await auth.emailOtp.sendVerificationOtp({email}); } catch { /* Verification can be requested from Neon if email provider is unavailable. */ }
  return {error:"Account created. Check your email for a verification message. Email verification must be enabled in Neon before dashboard access."};
 }
 
@@ -35,4 +35,9 @@ export async function resendAdminCode(_prev:{error:string}|null,form:FormData){
  if(email!==(process.env.FIM_ADMIN_EMAIL||"").toLowerCase())return {error:"Unauthorized email."};
  const {error}=await auth.sendVerificationEmail({email,callbackURL:"/admin"});
  return {error:error?(error.message||"Unable to send verification code."):"A new verification code was requested. Check your inbox."};
+}
+
+export async function adminGoogleLogin(){
+ let url="";try{const {data,error}=await auth.signIn.social({provider:"google",callbackURL:"/admin"});if(error)return;url=data?.url||"";}catch{return}
+ if(url)redirect(url);
 }
