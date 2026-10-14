@@ -15,10 +15,15 @@ export async function memberSignUp(_state:{message:string}|null,form:FormData){
  const email=String(form.get("email")||"").trim().toLowerCase();
  const password=String(form.get("password")||"");
  const name=String(form.get("name")||"").trim();
- if(!email||!name||password.length<12)return {message:"Enter your name, email and a password with at least 12 characters."};
+ if(!email||!name||password.length<6)return {message:"Enter your name, email and a password with at least 6 characters."};
  try{
   const {error}=await auth.signUp.email({email,password,name});
-  if(error)return {message:error.message||"Registration failed."};
+  if(error){
+   const details=String(error.message||"Registration failed.");
+   if(password.length<8&&(/password|short|length|characters|validation/i.test(details)))
+    return {message:"Neon Auth currently requires at least 8 characters. Use 8 or more until the provider supports a 6-character minimum."};
+   return {message:details};
+  }
   const sent=await auth.emailOtp.sendVerificationOtp({email,type:"email-verification"});
   return {message:sent.error?"Account created. Verification email is temporarily unavailable. Try resending a code or Google sign-in. After verification, choose a membership and await administrator approval.":"Account created. Verify your email using the Verify email tab, then sign in to select a membership. An administrator will review your verified account."};
  }catch{return {message:"Account created or verification unavailable. Try signing in."}}
