@@ -13,7 +13,7 @@ export default async function VideosPage(){
    <p>{health.total} item{health.total===1?"":"s"} received by the media library. {health.processing>0?`${health.processing} item(s) currently processing. `:""}Only reviewed and approved films will appear for viewing.</p>
    {health.ready>0?<p>{health.ready} item(s) processed successfully and awaiting catalog approval.</p>:null}
   </>}
-  <div style="position:relative;padding-top:56.25%;"><iframe src="https://player.mediadelivery.net/embed/778486/812bbd6d-6f2d-440d-af01-15b2df638c10?autoplay=true&loop=false&muted=true&preload=true&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>
+  <div style={{position:"relative",paddingTop:"56.25%"}}><iframe src="https://player.mediadelivery.net/embed/778486/812bbd6d-6f2d-440d-af01-15b2df638c10?autoplay=true&loop=false&muted=true&preload=true&responsive=true" loading="lazy" style={{border:0,position:"absolute",top:0,height:"100%",width:"100%"}} allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowFullScreen></iframe></div>
  </div>
  </main>;
 }
