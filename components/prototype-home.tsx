@@ -65,7 +65,7 @@ export default function FimAddisHome() {
         <span className="brand-words"><strong>ፍም አዲስ</strong><small>FIM ADDIS</small></span>
       </a>
       <nav className="nav" aria-label="Main navigation">
-        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a>
+        <a href="/videos">{t.navDiscover}</a><a href="/membership">{t.navMembership}</a><a className="about-link" href="#about">{t.navAbout}</a><a href="/account">{lang==="am"?"መለያ":"My account"}</a>
       </nav>
       <div className="header-tools">
         <button type="button" aria-label="Switch language" onClick={changeLang}>{lang === "en" ? "አማ" : "EN"}</button>
