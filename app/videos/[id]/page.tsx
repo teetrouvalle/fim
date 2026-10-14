@@ -24,7 +24,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  const available=access&&canAuthorizePlayback()&&flags[0]?.value==="true";
  let src="";
  if(available){
-  const expires=Math.floor(Date.now()/1000)+900;
+  const expires=Math.floor(Date.now()/1000)+3*60*60;
   const guid=String(video.bunny_guid);
   const key=process.env.BUNNY_STREAM_TOKEN_KEY||"";
   const token=createHash("sha256").update(key+guid+expires).digest("hex");
