@@ -18,24 +18,9 @@ export async function memberSignUp(_state:{message:string}|null,form:FormData){
  if(!email||!name||password.length<8)return {message:"Enter your name, email and a password with at least 8 characters."};
  try{
   const {error}=await auth.signUp.email({email,password,name});
-  if(error){
-   const details=String(error.message||"Registration failed.");
-      return {message:details};
-  }
-  const sent=await auth.emailOtp.sendVerificationOtp({email,type:"email-verification"});
-  return {message:sent.error?"Account created. Verification email is temporarily unavailable. Try resending a code or Google sign-in. After verification, choose a membership and await administrator approval.":"Account created. Verify your email using the Verify email tab, then sign in to select a membership. An administrator will review your verified account."};
- }catch{return {message:"Account created or verification unavailable. Try signing in."}}
-}
-export async function memberRequestCode(_state:{message:string}|null,form:FormData){
- const email=String(form.get("email")||"").trim().toLowerCase();
- if(!email)return {message:"Enter your email first."};
- try{const {error}=await auth.emailOtp.sendVerificationOtp({email,type:"email-verification"});return {message:error?(error.message||"Verification email is unavailable."):"If eligible, a verification code has been requested."}}catch{return {message:"Verification provider unavailable."}}
-}
-export async function memberVerifyCode(_state:{message:string}|null,form:FormData){
- const email=String(form.get("email")||"").trim().toLowerCase();
- const otp=String(form.get("otp")||"").trim();
- if(!/^[0-9]{4,8}$/.test(otp))return {message:"Enter the numeric code from your email."};
- try{const {error}=await auth.emailOtp.verifyEmail({email,otp});return {message:error?(error.message||"Code invalid or expired."):"Email verified. Sign in to choose your membership and request account approval."}}catch{return {message:"Verification is temporarily unavailable."}}
+  if(error)return {message:String(error.message||"Registration failed.")};
+  return {message:"Account created. No email verification code is required. Sign in and choose a membership while an administrator reviews your account."};
+ }catch{return {message:"Registration could not be completed. Please try again."}}
 }
 export async function memberGoogleLogin(){
  let url="";
