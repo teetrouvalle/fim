@@ -1,5 +1,6 @@
 "use client";
 import {useActionState,useState} from "react";
+import Link from "next/link";
 import {memberSignIn,memberSignUp,memberRequestCode,memberVerifyCode,memberGoogleLogin} from "./actions";
 export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"signin"|"signup"|"verify"}){
  const [tab,setTab]=useState<"signin"|"signup"|"verify">(initialTab);
@@ -16,6 +17,7 @@ export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"sign
  <label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="email"/>
  <label htmlFor="password">Password</label><input id="password" name="password" type="password" minLength={tab==="signup"?12:undefined} required autoComplete={tab==="signup"?"new-password":"current-password"}/>
  {(tab==="signup"?b:a)?.message&&<p className="form-alert" role="status">{(tab==="signup"?b:a)?.message}</p>}
+ {tab==="signup"&&b?.message?.startsWith("Account created.")&&<div className="account-onboarding-next"><strong>Next: verify your email and select a membership</strong><p>Choose your plan now, then complete account verification and wait for administrator approval before making payment.</p><button type="button" className="account-alt-button" onClick={()=>setTab("verify")}>Verify email →</button><Link className="btn" href="/membership">Browse memberships →</Link></div>}
  <button className="btn" disabled={aPending||bPending}>{tab==="signup"?"Create account":"Sign in"} →</button>
  </form>:<>
  <form className="admin-form" action={cAction}><label htmlFor="verify-email">Email</label><input id="verify-email" name="email" type="email" required/><label htmlFor="otp">Verification code</label><input id="otp" name="otp" inputMode="numeric" pattern="[0-9]{4,8}" autoComplete="one-time-code" required/>{c?.message&&<p role="status" className="form-alert">{c.message}</p>}<button className="btn" disabled={cPending}>Verify email →</button></form>
