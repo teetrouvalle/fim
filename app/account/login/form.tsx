@@ -15,7 +15,7 @@ export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"sign
  {tab!=="verify"?<form className="admin-form" action={tab==="signup"?bAction:aAction}>
  {tab==="signup"&&<><label htmlFor="name">Your name</label><input id="name" name="name" required autoComplete="name"/></>}
  <label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="email"/>
- <label htmlFor="password">Password</label><input id="password" name="password" type="password" minLength={tab==="signup"?12:undefined} required autoComplete={tab==="signup"?"new-password":"current-password"}/>
+ <label htmlFor="password">{tab==="signup"?"Password (minimum 6 characters)":"Password"}</label><input id="password" name="password" type="password" minLength={tab==="signup"?6:undefined} required autoComplete={tab==="signup"?"new-password":"current-password"}/>
  {(tab==="signup"?b:a)?.message&&<p className="form-alert" role="status">{(tab==="signup"?b:a)?.message}</p>}
  {tab==="signup"&&b?.message?.startsWith("Account created.")&&<div className="account-onboarding-next"><strong>Next: verify your email and select a membership</strong><p>Choose your plan now, then complete account verification and wait for administrator approval before making payment.</p><button type="button" className="account-alt-button" onClick={()=>setTab("verify")}>Verify email →</button><Link className="btn" href="/membership">Browse memberships →</Link></div>}
  <button className="btn" disabled={aPending||bPending}>{tab==="signup"?"Create account":"Sign in"} →</button>
