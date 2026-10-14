@@ -7,9 +7,9 @@ Fim Addis is a bilingual (English/Amharic) membership video site built with Next
 - Admin /admin: admin-only signed-in dashboard, payment review and Bunny catalog import/editor.
 - Price plans: Basic 599 ETB, Plus 999 ETB, Premium 1499 ETB / 30 days.
 - M-PESA receiving number 0707070707. Optional receipt path via Telegram @keithify.
-- When enabled, verified users can submit a M-PESA reference and a private JPG/PNG/PDF proof under 900 KB (stored in restricted Neon PostgreSQL) or choose Telegram manual receipt review.
+- When enabled, admin-approved customers can submit a M-PESA reference and a private JPG/PNG/PDF proof under 900 KB (stored in restricted Neon PostgreSQL) or choose Telegram manual receipt review.
 - Admin can approve or reject after independent M-PESA balance/transaction verification. Approved payments grant 30-day membership using a locked, idempotent Postgres function; rejected or pending requests give no access.
-- Videos appear only after manual import from Bunny and licensing/age-rating approval. Playback further requires verified authentication and sufficient active membership.
+- Videos appear only after manual import from Bunny and licensing/age-rating approval. Playback requires sign-in, administrator account approval and sufficient active membership.
 - Actual payments and playback are **disabled by default** until external launch requirements are completed.
 
 ## Control variables (Vercel server-side)
@@ -23,12 +23,12 @@ Fim Addis is a bilingual (English/Amharic) membership video site built with Next
 
 ## Mandatory production checks before changing switches
 1. Verify commercial content distribution permissions, classification and age-assurance requirements.
-2. Set up Neon's verification method: Project > Settings > Better Auth > enable email verification at signup. Shared email may be rate limited; use production SMTP and owned OAuth credentials.
+2. Customer email verification is not required. Preserve separate, verified administrator sign-in, enforce account review, and consider the impersonation risk of unverified customer email addresses.
 3. Complete independent confirmation of M-PESA receiving number **0707070707** and Telegram **@keithify**.
 4. Upgrade Vercel to a plan that permits commercial operation. Check billing and Neon free database storage use.
 5. In Bunny Stream > Library > Security, **enable Embed View Token Authentication** and configure secret `BUNNY_STREAM_TOKEN_KEY` on Vercel. Check domain restrictions / underlying CDN protection as appropriate.
-6. Import licensed/encoded Bunny titles, review rights/classification and mark published. Test with a verified test member.
-7. Run authenticated end-to-end testing: sign up, verify email, submit a sample receipt, private receipt view, reject, admin approval, membership renewal and signed playback; only then enable actual payments.
+6. Import licensed/encoded Bunny titles, review rights/classification and mark published. Test with an admin-approved test member.
+7. Run authenticated end-to-end testing: sign up, admin approve/decline, submit a sample receipt, private receipt view, reject or approve payment, membership renewal and signed playback; only then enable actual payments.
 8. Do not publish a video with uncertain rights. Never enable paywall with unprotected public video URLs.
 
 ## Local development
