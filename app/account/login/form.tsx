@@ -1,15 +1,17 @@
 "use client";
 import {useActionState,useState} from "react";
+import {useSearchParams} from "next/navigation";
 import {memberSignIn,memberSignUp,memberRequestCode,memberVerifyCode,memberGoogleLogin} from "./actions";
 export default function MemberLoginForm(){
- const [tab,setTab]=useState<"signin"|"signup"|"verify">("signin");
+ const search=useSearchParams();
+ const [tab,setTab]=useState<"signin"|"signup"|"verify">(search.get("mode")==="signup"?"signup":"signin");
  const [a,aAction,aPending]=useActionState(memberSignIn,null);
  const [b,bAction,bPending]=useActionState(memberSignUp,null);
  const [c,cAction,cPending]=useActionState(memberVerifyCode,null);
  const [d,dAction,dPending]=useActionState(memberRequestCode,null);
  return <div className="admin-login" style={{marginTop:40}}>
  <p className="eyebrow">FIM ADDIS ACCOUNT</p><h1>{tab==="signup"?"Create account":tab==="verify"?"Verify your email":"Welcome back"}</h1>
- <p className="muted">Membership and payment history are linked to your account.</p>
+ <p className="muted">Sign up, verify your email, and choose a membership. An administrator will review your verified account before payments or viewing access can begin.</p>
  <div className="login-tabs"><button className={tab==="signin"?"active":""} onClick={()=>setTab("signin")}>Sign in</button><button className={tab==="signup"?"active":""} onClick={()=>setTab("signup")}>Register</button><button className={tab==="verify"?"active":""} onClick={()=>setTab("verify")}>Verify email</button></div>
  {tab!=="verify"?<form className="admin-form" action={tab==="signup"?bAction:aAction}>
  {tab==="signup"&&<><label htmlFor="name">Your name</label><input id="name" name="name" required autoComplete="name"/></>}
