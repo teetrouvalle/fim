@@ -138,3 +138,15 @@
 .plan-modal-tier .btn{font-size:12px;text-align:center;padding:12px 8px}
 .plan-modal-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:26px;flex-wrap:wrap}
 @media(max-width:630px){.plan-modal-grid{grid-template-columns:1fr}.plan-modal{padding:18px}.plan-modal-tier{flex-direction:row;align-items:center;flex-wrap:wrap}}
+
+/* Administrator tier assignment and film art */
+.account-tier-form{border:1px solid var(--line);padding:17px;margin:18px 0;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.account-tier-form label{font-weight:700}
+.account-tier-form select{width:100%;max-width:350px}
+.account-tier-form .btn{align-self:flex-start}
+.admin-secondary-review{padding:10px 0;margin-top:12px;border-top:1px solid var(--line)}
+.admin-secondary-review summary{cursor:pointer;font-size:13px;font-weight:700}
+.admin-thumb-fieldset{border:1px solid var(--line);padding:14px;margin:10px 0;display:flex;flex-direction:column;gap:12px;min-width:0}
+.admin-thumb-fieldset legend{font-weight:700;padding:0 6px}
+.admin-thumb-preview{width:100%;max-width:360px;height:auto;aspect-ratio:16/9;object-fit:cover;background:var(--art)}
+.film-thumb-image{display:block;width:100%;height:100%;object-fit:cover}
