@@ -1,6 +1,6 @@
 "use client";
 import {useActionState,useState} from "react";
-import {signInAdmin,signUpAdmin,verifyAdminEmail,resendAdminCode} from "./actions";
+import {signInAdmin,signUpAdmin,verifyAdminEmail,resendAdminCode,adminGoogleLogin} from "./actions";
 export default function AdminLoginForm(){
  const [mode,setMode]=useState<"signin"|"signup"|"verify">("signin");
  const [signinState,signinAction,signinPending]=useActionState(signInAdmin,null);
@@ -16,6 +16,6 @@ export default function AdminLoginForm(){
    {(mode==="signin"?signinState:signupState)?.error?<p role="status" className="form-alert">{(mode==="signin"?signinState:signupState)?.error}</p>:null}
    <button className="btn" disabled={signinPending||signupPending}>{mode==="signin"?"Sign in":"Create administrator account"} →</button>
   </form>}
-  <p className="tiny muted">Access requires a verified email and an approved administrator account. Passwords are managed by Neon Auth.</p>
+  <form action={adminGoogleLogin} style={{marginTop:20}}><button className="account-alt-button" type="submit">Continue with Google</button></form><p className="tiny muted">Access requires a verified email and an approved administrator account. Passwords are managed by Neon Auth.</p>
  </div>;
 }
