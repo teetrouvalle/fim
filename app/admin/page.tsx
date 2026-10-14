@@ -12,7 +12,7 @@ export default async function Admin(){
  sql`SELECT id,title,tier,published,rights_verified,rating_reviewed,added_at FROM public.fim_videos ORDER BY added_at DESC LIMIT 20`,
  sql`SELECT id,account_email,plan_id,amount_etb,reference,status,receipt_channel,created_at FROM public.fim_payment_reviews ORDER BY created_at DESC LIMIT 20`,
  getBunnyLibraryHealth(),
- sql`SELECT count(*)::int AS count FROM neon_auth."user" u LEFT JOIN public.fim_account_reviews a ON a.user_id=u.id::text WHERE u."emailVerified"=true AND coalesce(a.status,\'pending\')=\'pending\' AND NOT EXISTS (SELECT 1 FROM public.fim_admin_allowlist al WHERE lower(al.email)=lower(u.email))`,
+ sql`SELECT count(*)::int AS count FROM neon_auth."user" u LEFT JOIN public.fim_account_reviews a ON a.user_id=u.id::text WHERE coalesce(a.status,\'pending\')=\'pending\' AND NOT EXISTS (SELECT 1 FROM public.fim_admin_allowlist al WHERE lower(al.email)=lower(u.email))`,
  ]);
  return <main className="shell admin-dashboard">
   <header className="admin-header"><div><p className="eyebrow">FIM ADDIS / ፍም አዲስ</p><h1>Administration</h1><p className="muted">Signed in: {user.email}</p></div><Link href="/" className="subtle-link">View website ↗</Link></header>
