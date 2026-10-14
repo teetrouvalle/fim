@@ -12,7 +12,6 @@ export default async function AccountPage(){
  const sql=db();
  const [member,payments,review]=await Promise.all([getActiveMembership(user.id),sql`SELECT id,plan_id,amount_etb,status,receipt_channel,created_at,review_note FROM public.fim_payment_reviews WHERE account_user_id=${user.id} ORDER BY created_at DESC LIMIT 30`,getAccountReview(user.id)]);
  return <main className="shell account-page"><div className="account-heading"><div><p className="eyebrow">FIM ADDIS</p><h1>My account</h1><p className="muted">{user.name} · {user.email}</p></div><form action={memberSignOut}><button className="account-alt-button">Sign out</button></form></div>
- {!user.verified&&<div className="checkout-note"><strong>Verify your email</strong><p>Your email has not been verified. Payment submission and paid video access are disabled until you verify your address.</p><Link href="/account/login" className="subtle-link">Open verification →</Link></div>}
  <section className="account-review-banner" aria-label="Account verification and approval">
  <p className="eyebrow">ACCOUNT STATUS</p>
  <h2>{review.status==="approved"?"Account approved":review.status==="rejected"?"Account declined":review.status==="pending"?"Awaiting administrator approval":"Email verification required"}</h2>
