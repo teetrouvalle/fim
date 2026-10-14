@@ -1,8 +1,9 @@
 "use client";
-import {useActionState,useState} from "react";
+import {useActionState,useState,useEffect} from "react";
 import {memberSignIn,memberSignUp,memberGoogleLogin} from "./actions";
 export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"signin"|"signup"}){
  const [tab,setTab]=useState<"signin"|"signup">(initialTab);
+ useEffect(()=>{const restore=(event:PageTransitionEvent)=>{if(event.persisted)window.location.reload()};window.addEventListener("pageshow",restore);return ()=>window.removeEventListener("pageshow",restore)},[]);
  const [kind,setKind]=useState<"email"|"phone">("email");
  const [login,loginAction,loginPending]=useActionState(memberSignIn,null);
  const [signup,signupAction,signupPending]=useActionState(memberSignUp,null);
@@ -21,7 +22,7 @@ export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"sign
   <label htmlFor="password">{tab==="signup"?"Password (8 characters minimum)":"Password"}</label>
   <input id="password" name="password" type="password" autoComplete={tab==="signup"?"new-password":"current-password"} minLength={tab==="signup"?8:undefined} required/>
   {state?.message&&<p role="status" className="form-alert">{state.message}</p>}
-  <button className="btn" disabled={signupPending||loginPending}>{tab==="signup"?"Create account and browse films":"Sign in to the library"} →</button>
+  <button className="btn" disabled={signupPending||loginPending}>{tab==="signup"?"Create account":"Sign in to Fim Addis"} →</button>
  </form>
  <form action={memberGoogleLogin} style={{marginTop:18}}><button className="account-alt-button">Continue with Google</button></form>
  <p className="tiny muted">Phone accounts cannot receive SMS password resets at this time. Keep your password safe. Paid memberships require administrator approval.</p>

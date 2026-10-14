@@ -1,3 +1,4 @@
+import CustomerTierHeader from "../../components/customer-tier-header";
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {db} from "../../lib/admin";
@@ -15,6 +16,7 @@ export default async function AccountPage(){
   getAccountReview(user.id)
  ]);
  return <main className="shell account-page">
+ <CustomerTierHeader/>
  <div className="account-heading"><div><p className="eyebrow">FIM ADDIS</p><h1>My account</h1><p className="muted">{user.name}</p></div><form action={memberSignOut}><button className="account-alt-button">Sign out</button></form></div>
  <section className="account-summary">
  <div className="account-panel"><p className="eyebrow">EXPLORE</p><h2>Discover films</h2><p className="muted">Browse our free catalog and discover member-only releases. No subscription is required for free titles.</p><Link href="/videos" className="btn">Browse the film library →</Link></div>

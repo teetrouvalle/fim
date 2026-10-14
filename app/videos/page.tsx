@@ -1,3 +1,4 @@
+import CustomerTierHeader from "../../components/customer-tier-header";
 import Link from "next/link";
 import Image from "next/image";
 import {db} from "../../lib/admin";
@@ -18,6 +19,7 @@ export default async function VideosPage(){
  const videos=rows.map(v=>({id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0"}));
  const free=videos.filter(v=>v.is_free),paid=videos.filter(v=>!v.is_free);
  return <main className="shell" style={{paddingTop:65,paddingBottom:95}}>
+ <CustomerTierHeader/>
  <Link className="muted" href="/">← Fim Addis</Link><p className="eyebrow" style={{marginTop:35}}>FILM LIBRARY</p><h1 className="page-title">Discover the films.</h1>
  <p className="muted" style={{maxWidth:680,lineHeight:1.8}}>Watch free selections without a subscription. Choose a membership only when you want to unlock a paid title.</p>
  <section className="admin-section"><div className="library-heading"><div><p className="eyebrow">FREE CATALOG</p><h2>Watch for free</h2></div><span className="muted">{free.length} title(s)</span></div>
