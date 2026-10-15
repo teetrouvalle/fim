@@ -38,7 +38,7 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
      VALUES (${user.id},${user.email},${plan},${Number(amount)},${transaction},${transaction},${channel},'mpesa',CASE WHEN ${encoded}='' THEN NULL ELSE decode(${encoded},'base64') END,${mime||null},${filename||null},'pending') RETURNING id`;
   revalidatePath("/account");
   const id=String(row[0]?.id||"");
-  return {ok:true,reference:id,message:channel==="telegram"?"Proof registered. Send your M-PESA receipt and transaction ID to @keithify; access stays pending until we verify it.":"Receipt submitted. We'll verify the M-PESA transaction before activating your membership."};
+  return {ok:true,reference:id,message:"Your screenshot was uploaded successfully. Your membership will activate after the administrator verifies your payment."};
  }catch(e){
   const error=String(e);
   if(error.includes("fim_mpesa_txn_unique")||error.includes("duplicate key"))return {message:"This payment transaction reference has already been submitted."};
