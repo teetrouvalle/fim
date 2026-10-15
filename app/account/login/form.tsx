@@ -1,9 +1,8 @@
 "use client";
-import {useActionState,useState,useEffect} from "react";
+import {useActionState,useState} from "react";
 import {memberSignIn,memberSignUp,memberGoogleLogin} from "./actions";
 export default function MemberLoginForm({initialTab="signin"}:{initialTab?:"signin"|"signup"}){
  const [tab,setTab]=useState<"signin"|"signup">(initialTab);
- useEffect(()=>{const restore=(event:PageTransitionEvent)=>{if(event.persisted)window.location.reload()};window.addEventListener("pageshow",restore);return ()=>window.removeEventListener("pageshow",restore)},[]);
  const [kind,setKind]=useState<"email"|"phone">("email");
  const [login,loginAction,loginPending]=useActionState(memberSignIn,null);
  const [signup,signupAction,signupPending]=useActionState(memberSignUp,null);
