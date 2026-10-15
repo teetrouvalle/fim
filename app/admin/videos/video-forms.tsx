@@ -1,7 +1,7 @@
 "use client";
 import {useActionState} from "react";
 import Image from "next/image";
-import {importBunnyVideo,updateVideo,syncBunnyUploads} from "./actions";
+import {deleteVideo,importBunnyVideo,updateVideo,syncBunnyUploads} from "./actions";
 export function SyncBunnyUploads(){
  const [state,action,busy]=useActionState(syncBunnyUploads,null);
  return <form action={action} className="admin-form" style={{marginTop:18,marginBottom:22}}>
@@ -12,6 +12,14 @@ export function SyncBunnyUploads(){
 export function ImportVideo({guid,title,status}:{guid:string;title:string;status:number}){
  const [state,action,busy]=useActionState(importBunnyVideo,null);
  return <form action={action} className="import-row"><input type="hidden" name="guid" value={guid}/><div><strong>{title}</strong><p className="muted tiny">{guid} · {status===4?"Ready":status===5?"Failed":"Processing"}</p></div><button className="account-alt-button" disabled={busy}>{busy?"Importing…":"Import as draft"}</button>{state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}</form>
+}
+export function DeleteVideo({id,title}:{id:string;title:string}){
+ const [state,action,busy]=useActionState(deleteVideo,null);
+ return <form action={action} className="admin-form" onSubmit={e=>{if(!window.confirm(`Remove "${title}" from Fim Addis? This will not delete the Bunny upload.`))e.preventDefault()}}>
+ <input type="hidden" name="id" value={id}/>
+ <button type="submit" className="account-alt-button" disabled={busy}>{busy?"Removing…":"Delete from catalog"}</button>
+ {state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}
+ </form>;
 }
 export function EditVideo({video}:{video:{id:string,title:string,description:string,tier:string,is_free:boolean,has_thumbnail:boolean,thumbnail_version:string,rights_verified:boolean,rating_reviewed:boolean,published:boolean}}){
  const [state,action,busy]=useActionState(updateVideo,null);
