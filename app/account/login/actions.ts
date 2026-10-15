@@ -40,7 +40,8 @@ export async function memberSignUp(_prev:{message:string}|null,form:FormData){
    await signOutPhone();
   }catch{return {message:"Could not finish registration. Please sign in with your new account."}}
  }
- redirect("/videos");
+ revalidatePath("/");
+ redirect("/");
 }
 export async function memberGoogleLogin(){
  let url="";
