@@ -143,10 +143,10 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
     SET title=${title},description=${description},tier=${tier},
         is_free=${isFree},rights_verified=${rights},rating_reviewed=${rating},
         thumbnail_bytes=CASE WHEN ${thumbnailAction}::text='remove' THEN NULL
-          WHEN ${thumbnailAction}::text='replace' THEN decode(${thumbnailData},'base64')
+          WHEN ${thumbnailAction}::text='replace' THEN decode(${thumbnailData}::text,'base64')
           ELSE thumbnail_bytes END,
         thumbnail_mime=CASE WHEN ${thumbnailAction}::text='remove' THEN NULL
-          WHEN ${thumbnailAction}::text='replace' THEN ${thumbnailMime} ELSE thumbnail_mime END,
+          WHEN ${thumbnailAction}::text='replace' THEN ${thumbnailMime}::text ELSE thumbnail_mime END,
         thumbnail_updated_at=CASE WHEN ${thumbnailAction}::text='keep' THEN thumbnail_updated_at ELSE now() END,
         published=${publish},updated_at=now()
     WHERE id=${id}::uuid
