@@ -8,7 +8,7 @@ export async function reviewPayment(_prev:ReviewState|null,form:FormData):Promis
  const decision=String(form.get("decision")||"");
  const note=String(form.get("note")||"").slice(0,500).trim();
  if(!/^[0-9a-f-]{36}$/i.test(id)||!["approve","reject"].includes(decision))return {message:"Invalid review request."};
- if(decision==="approve"&&form.get("confirmed")!=="yes")return {message:"You must independently confirm that the funds arrived in the receiving M-PESA account."};
+ if(decision==="approve"&&form.get("confirmed")!=="yes")return {message:"You must independently confirm that the funds arrived in the receiving payment account."};
  if(decision==="reject"&&!note)return {message:"Enter a reason before rejecting."};
  try{
   const sql=db();
