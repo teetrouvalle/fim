@@ -168,3 +168,30 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
     :publish?"Video saved and published to the approved catalog.":"Video saved as a private draft."};
  }catch(e){return {message:failureMessage(e,"save")}}
 }
+
+/** Remove a catalog entry only. Never delete the underlying Bunny Stream upload. */
+export async function deleteVideo(_state:State|null,form:FormData):Promise<State>{
+ const admin=await getAdminSession();
+ if(!admin)return {message:"Your administrator session expired. Sign in again."};
+ const id=String(form.get("id")||"").trim();
+ if(!uuidPattern.test(id))return {message:"Invalid video ID."};
+ try{
+  const sql=db();
+  const result=await sql`
+   WITH removed AS (
+    DELETE FROM public.fim_videos
+    WHERE id=${id}::uuid AND NOT EXISTS (
+      SELECT 1 FROM public.fim_video_entitlements WHERE video_id=${id}::uuid
+    )
+    RETURNING id,title,bunny_guid
+   ), audit AS (
+    INSERT INTO public.fim_audit_log(actor_email,action,details)
+    SELECT ${admin.email},'video_deleted',jsonb_build_object('id',id,'title',title,'bunny_guid',bunny_guid)
+    FROM removed RETURNING id
+   )
+   SELECT removed.id FROM removed JOIN audit ON true`;
+  if(!result.length)return {message:"Video not removed. It may have existing individual-purchase entitlements, or it may already be deleted."};
+  revalidatePath("/");revalidatePath("/videos");revalidatePath("/admin/videos");revalidatePath(`/videos/${id}`);
+  return {ok:true,message:"Video removed from the Fim Addis catalog. The Bunny upload was not deleted."};
+ }catch(error){return {message:failureMessage(error,"save")}}
+}
