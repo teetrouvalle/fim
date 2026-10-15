@@ -7,7 +7,8 @@ type State={message:string;ok?:boolean;savedAt?:string};
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function failureMessage(error:unknown, operation:"import"|"save"){
   console.error(`[Fim Addis Video Manager] ${operation} failed`,error instanceof Error?{name:error.name,message:error.message}:String(error));
-  return "The database could not "+(operation==="save"?"save these changes.":"import the video.")+" Please try again.";
+  const code=error&&typeof error==="object"&&"code" in error&&typeof error.code==="string"?error.code:"UNKNOWN";
+  return "The database could not "+(operation==="save"?"save these changes.":"import the video.")+" Error code: "+code+". Please report this code to the administrator.";
 }
 
 export async function importBunnyVideo(_state:State|null,form:FormData):Promise<State>{
