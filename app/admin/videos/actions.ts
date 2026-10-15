@@ -142,12 +142,12 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
     UPDATE public.fim_videos
     SET title=${title},description=${description},tier=${tier},
         is_free=${isFree},rights_verified=${rights},rating_reviewed=${rating},
-        thumbnail_bytes=CASE WHEN ${thumbnailAction}='remove' THEN NULL
-          WHEN ${thumbnailAction}='replace' THEN decode(${thumbnailData},'base64')
+        thumbnail_bytes=CASE WHEN ${thumbnailAction}::text='remove' THEN NULL
+          WHEN ${thumbnailAction}::text='replace' THEN decode(${thumbnailData},'base64')
           ELSE thumbnail_bytes END,
-        thumbnail_mime=CASE WHEN ${thumbnailAction}='remove' THEN NULL
-          WHEN ${thumbnailAction}='replace' THEN ${thumbnailMime} ELSE thumbnail_mime END,
-        thumbnail_updated_at=CASE WHEN ${thumbnailAction}='keep' THEN thumbnail_updated_at ELSE now() END,
+        thumbnail_mime=CASE WHEN ${thumbnailAction}::text='remove' THEN NULL
+          WHEN ${thumbnailAction}::text='replace' THEN ${thumbnailMime} ELSE thumbnail_mime END,
+        thumbnail_updated_at=CASE WHEN ${thumbnailAction}::text='keep' THEN thumbnail_updated_at ELSE now() END,
         published=${publish},updated_at=now()
     WHERE id=${id}::uuid
     RETURNING id,updated_at,published
