@@ -8,7 +8,7 @@ const MAX_RECEIPT=900_000;
 export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormData):Promise<SubmissionState>{
  if(process.env.FIM_PAYMENTS_OPEN!=="true")return {message:"Payments are not open yet. Please don't transfer funds."};
  const user=await getViewer();if(!user)return {message:"Please sign in before submitting payment proof."};
- if(!await accountIsApproved(user.id))return {message:"Your account must be approved by an administrator before payment submission."};
+ if(!await accountIsApproved(user.id))return {message:"This account cannot submit payments. Contact support."};
  const plan=String(form.get("plan")||"").toLowerCase();
  const channel=String(form.get("channel")||"website");
  const transaction=String(form.get("transaction")||"").trim().toUpperCase();
