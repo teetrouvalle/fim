@@ -28,7 +28,10 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
   }
  }
  const flag=await sql`SELECT value FROM public.fim_site_settings WHERE key='playback_open' LIMIT 1`;
- const available=entitled&&canAuthorizePlayback()&&flag[0]?.value==="true";
+ const playbackConfigured=canAuthorizePlayback();
+ const databasePlaybackOpen=flag[0]?.value==="true";
+ const available=entitled&&playbackConfigured&&databasePlaybackOpen;
+ const playbackIssue=!databasePlaybackOpen?"Playback is temporarily disabled in site settings.":!playbackConfigured?"Playback is temporarily unavailable due to server configuration.":"Playback is temporarily unavailable.";
  let iframe="";
  if(available){
   const expires=Math.floor(Date.now()/1000)+3*60*60;
@@ -43,7 +46,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  <p className="eyebrow" style={{marginTop:34}}>{free?"FREE TO WATCH":"FIM ADDIS MEMBERSHIP"}</p>
  <h1 className="page-title">{video.title}</h1><p className="muted">{video.description}</p>
  {!entitled?<div className="checkout-note"><h2>Membership required</h2><p>This is a paid film. Pick an eligible membership to unlock it after account and payment approval.</p><PlanPrompt title={String(video.title)} minTier={String(video.tier)} purchaseOnly={video.tier==="purchase_only"}/></div>
- :!available?<div className="checkout-note" role="status"><h2>{free?"Free film":"Film"} currently unavailable</h2><p>Streaming is being prepared. Playback will be available after Bunny Stream security and publication checks are completed. No payment is required for free films.</p></div>
+ :!available?<div className="checkout-note" role="status"><h2>{free?"Free film":"Film"} currently unavailable</h2><p>{playbackIssue}</p></div>
  :<div className="signed-player"><iframe src={iframe} title={String(video.title)} allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/></div>}
  </main>;
 }
