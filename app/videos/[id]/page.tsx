@@ -20,7 +20,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  let entitled=free;
  if(!free){
   const user=await getViewer();
-  if(user&&(await getAccountReview(user.id)).status==="approved"){
+  if(user&&(await getAccountReview(user.id)).status!=="rejected"){
    const membership=await getEffectiveMembership(user.id);
    const rank={basic:1,plus:2,premium:3}[String(video.tier) as "basic"|"plus"|"premium"]||99;
    const purchased=video.tier==="purchase_only"?await sql`SELECT 1 FROM public.fim_video_entitlements WHERE user_id=${user.id} AND video_id=${id}::uuid LIMIT 1`:[];
