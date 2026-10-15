@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { plans, priceText } from "../lib/memberships";
-import LibraryStatus from "./library-status";
+import Image from "next/image";
 
 type Language = "en" | "am";
 type Theme = "dark" | "light";
@@ -31,7 +31,12 @@ const copy = {
     footer: "የአባልነት ክፍያና የቪዲዮ መመልከቻ አገልግሎት የተፈላጊ ፈቃዶችና የደህንነት ምርመራ ሲጠናቀቅ ይከፈታል።", badge: "18+ ማሳሰቢያ"
   }
 } as const;
-export default function FimAddisHome({signedIn,currentTier}:{signedIn:boolean;currentTier:string}) {
+type Film={id:string;title:string;description:string;tier:string;is_free:boolean;has_thumbnail:boolean;thumbnail_version:string};
+export default function FimAddisHome({signedIn,currentTier,films}:{signedIn:boolean;currentTier:string;films:Film[]}) {
+  const [showMembers,setShowMembers]=useState(false);
+  const freeFilms=films.filter(f=>f.is_free).slice(0,3);
+  const memberFilms=films.filter(f=>!f.is_free);
+  const filmCard=(film:Film)=><article key={film.id} className="film-card"><a className="film-card-link" href={`/videos/${film.id}`}><div className="film-art">{film.has_thumbnail?<Image unoptimized className="film-thumb-image" src={`/videos/${film.id}/thumbnail?v=${encodeURIComponent(film.thumbnail_version)}`} width={600} height={338} alt={`${film.title} thumbnail`}/>:<span aria-label="Thumbnail not uploaded">ፍ</span>}</div><div className="film-body"><span className="eyebrow">{film.is_free?"FREE TO WATCH":film.tier.toUpperCase()+" MEMBERSHIP"}</span><h3>{film.title}</h3><p className="muted">{film.description||"Discover this Fim Addis film."}</p><span className="subtle-link">{film.is_free?"Watch free →":"View film →"}</span></div></a></article>;
   const [lang, setLang] = useState<Language>("en");
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   useEffect(() => {
@@ -85,7 +90,13 @@ export default function FimAddisHome({signedIn,currentTier}:{signedIn:boolean;cu
       <div className="notice-strip"><span className="notice-dot"/> FIM ADDIS <span>—</span> {t.status}</div>
       <section className="section" id="catalogue">
         <div className="section-lead"><div><p className="eyebrow">{t.browseTag}</p><h2>{t.browse}</h2></div><p className="section-description">{t.browseText}</p></div>
-        <div className="poster-grid">{[t.card1,t.card2,t.card3].map((name,i)=><article key={name} className="poster-card"><div className={"poster-art poster-"+(i+1)} aria-label={t.pending}><span className="poster-serial">0{i+1}</span><span className="poster-center">ፍ</span><span className="poster-bottom">FIM ADDIS</span></div><h3>{name}</h3><span className="caption">{t.pending}</span></article>)}</div><div className="catalog-status"><LibraryStatus language={lang}/><a href="/videos" className="subtle-link">{lang==="en"?"Open video library →":"የቪዲዮ ስብስቡን ይመልከቱ →"}</a></div>
+        <div className="library-heading"><div><p className="eyebrow">FREE TO WATCH</p><h3>Free films</h3></div><span className="muted">{freeFilms.length} / 3</span></div>
+        {freeFilms.length?<div className="film-grid">{freeFilms.map(filmCard)}</div>:<p className="muted">Free films are coming soon.</p>}
+        <div className="catalog-status"><a href="/videos" className="subtle-link">Browse the complete library →</a></div>
+        <div style={{marginTop:36}}>
+          <div className="library-heading"><div><p className="eyebrow">MEMBERS ONLY</p><h3>Member films</h3></div><button type="button" className="account-alt-button" aria-expanded={showMembers} onClick={()=>setShowMembers(!showMembers)}>{showMembers?"Hide member films −":`Show member films (${memberFilms.length}) +`}</button></div>
+          {showMembers&&(memberFilms.length?<div className="film-grid">{memberFilms.map(filmCard)}</div>:<p className="muted">Member films are coming soon.</p>)}
+        </div>
       </section>
       <section className="section memberships" id="membership">
         <div className="section-lead"><div><p className="eyebrow">{t.tiersTag}</p><h2>{t.tiers}</h2></div><p className="section-description">{t.tiersText}</p></div>
