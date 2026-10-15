@@ -154,7 +154,7 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
    ), audit AS (
     INSERT INTO public.fim_audit_log(actor_email,action,details)
     SELECT ${admin.email},'video_updated',
-      jsonb_build_object('id',id,'published',published,'tier',${tier},'is_free',${isFree},'thumbnail_action',${thumbnailAction})
+      jsonb_build_object('id',id,'published',published,'tier',${tier}::text,'is_free',${isFree}::boolean,'thumbnail_action',${thumbnailAction}::text)
     FROM updated RETURNING id
    )
    SELECT updated.id,updated.updated_at,updated.published FROM updated JOIN audit ON true`;
