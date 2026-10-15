@@ -13,7 +13,7 @@ export default function PaymentForm({plan}:{plan:string}){
    <p>{state.message}</p>
    <p className="muted">Submission reference: <code>{state.reference}</code></p>
    <p><a className="subtle-link" href="/account">View payment status →</a></p>
-  </div>:<form className="admin-form" action={act} encType="multipart/form-data">
+  </div>:<form className="admin-form" action={act}>
    <input type="hidden" name="plan" value={plan}/>
    <input type="hidden" name="channel" value="website"/>
    <label htmlFor="transaction">Payment transaction reference</label>
