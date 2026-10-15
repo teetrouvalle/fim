@@ -2,7 +2,7 @@ import Link from "next/link";
 import {redirect} from "next/navigation";
 import {db,getAdminSession} from "../../../lib/admin";
 import {getVideoDiagnostics} from "../../../lib/bunny";
-import {ImportVideo,EditVideo,SyncBunnyUploads} from "./video-forms";
+import {ImportVideo,EditVideo,DeleteVideo,SyncBunnyUploads} from "./video-forms";
 export const dynamic="force-dynamic";
 export const metadata={title:"Video management | Fim Addis",robots:{index:false,follow:false}};
 export default async function VideoManagement(){
@@ -27,6 +27,6 @@ export default async function VideoManagement(){
  <section className="admin-section"><p className="eyebrow">PUBLIC CATALOG</p><h2>Free catalog</h2><p className="muted">Mark any imported Bunny video as Free in its editor below. Free films have no membership paywall, but still require distribution rights, age-classification review, and publication.</p>
  <p className="muted">{videos.filter(v=>v.is_free&&v.published).length} published free film(s) · {videos.filter(v=>v.is_free&&!v.published).length} free draft(s)</p>
  </section>
- <section className="admin-section"><p className="eyebrow">CATALOG ENTRIES</p><h2>Manage free and paid films</h2><div className="video-admin-grid">{videos.length?videos.map(v=><EditVideo key={v.id} video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>):<p className="muted">Import a video from Bunny first.</p>}</div></section>
+ <section className="admin-section"><p className="eyebrow">CATALOG ENTRIES</p><h2>Manage free and paid films</h2><div className="video-admin-grid">{videos.length?videos.map(v=><div key={v.id}><EditVideo video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/><DeleteVideo id={String(v.id)} title={String(v.title)}/></div>):<p className="muted">Import a video from Bunny first.</p>}</div></section>
  </main>;
 }
