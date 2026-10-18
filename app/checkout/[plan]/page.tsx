@@ -20,16 +20,12 @@ export default async function Checkout({params}:{params:Promise<{plan:string}>})
  <CustomerTierHeader/>
  <Link href="/membership" className="muted">← Memberships</Link><p className="eyebrow" style={{marginTop:30}}>MEMBERSHIP CHECKOUT</p>
  <h1 className="page-title">{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h1><p className="muted">30 days per confirmed payment · manual payment verification</p>
- <div className="account-panel" style={{marginTop:28}}><p className="eyebrow">Membership summary</p><h2>{Number(plan.priceEtb).toLocaleString()} ETB <small className="muted" style={{fontSize:14,fontWeight:400}}>/ 30 days</small></h2><ul className="feature-list">{plan.features.map(f=><li key={f.en}>{f.en}</li>)}</ul></div>
- <section className="account-panel" style={{marginTop:24}}>
-  <p className="eyebrow">PAYMENT RECIPIENT</p>
-  <h2>{number}</h2><p><strong>Semira Musa</strong></p>
-  <p className="muted">Pay the exact membership amount, keep your confirmation, and upload its screenshot below for manual verification.</p>
- </section>
- {review?.status==="rejected"?<section className="checkout-note"><strong>Account declined</strong><p>Your account cannot submit payments. {review.reviewNote||"Please contact the Fim Addis team for further information."}</p><Link href="/account" className="subtle-link">Account status →</Link></section>
- 
- :!enabled?<section className="checkout-note" role="status"><strong>Payments aren't open yet</strong><p>The payment upload service is temporarily unavailable. Please try again later.</p></section>
- :<PaymentForm plan={plan.id}/>}
+ <div className="account-panel" style={{marginTop:28}}><p className="eyebrow">Membership summary</p><h2>{Number(plan.priceEtb).toLocaleString()} ETB <small className="muted" style={{fontSize:14,fontWeight:400}}>/ 30 days</small></h2><p className="muted">Or <strong>${plan.priceCryptoUsd.toFixed(2)} USD</strong> when paying with cryptocurrency (network fees extra).</p><ul className="feature-list">{plan.features.map(f=><li key={f.en}>{f.en}</li>)}</ul></div>
+ <PaymentForm plan={plan.id} cryptoPriceUsd={plan.priceCryptoUsd} mpesaNumber={number}
+  paymentEnabled={enabled} accountEligible={review?.status!=="rejected"}
+  unavailableMessage={review?.status==="rejected"
+   ?review.reviewNote||"Your account cannot submit payments. Contact support."
+   :"Payments are temporarily unavailable. Do not send money until payment submissions reopen."}/>
 
  <p className="disclaimer">Transfers must be independently confirmed by Fim Addis. Uploaded receipts do not activate membership automatically. Payment approval requires independent confirmation of the received funds. Purchase-only films are not included in membership plans.</p>
  </main>;
