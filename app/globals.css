@@ -197,3 +197,16 @@
 .account-manager-details .account-tier-form{margin:18px 0;padding:18px;background:var(--bg)}
 .account-manager-details .admin-secondary-review{padding-top:18px}
 @media(max-width:620px){.account-manager-profile{grid-template-columns:1fr;row-gap:8px}.account-manager-details .account-tier-form{padding:13px}}
+
+/* Mobile-only two-column film catalogue; desktop is unchanged. */
+@media(max-width:500px){
+ .film-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0}
+ .film-card{min-width:0;overflow:hidden}
+ .film-art{height:auto;aspect-ratio:16/10;font-size:42px}
+ .film-body{padding:10px}
+ .film-body .eyebrow{font-size:9px;letter-spacing:.5px;overflow-wrap:anywhere}
+ .film-body h3,.film-body h2{font-size:13px;line-height:1.35;margin:7px 0}
+ .film-body p{font-size:11px;line-height:1.4;min-height:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .film-body .subtle-link{font-size:11px;white-space:normal}
+}
+.crypto-address{font-family:monospace;overflow-wrap:anywhere;word-break:break-word;font-size:13px}
