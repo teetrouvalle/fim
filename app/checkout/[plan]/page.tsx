@@ -1,6 +1,6 @@
 import CustomerTierHeader from "../../../components/customer-tier-header";
 import Link from "next/link";
-import {notFound} from "next/navigation";
+import {notFound,redirect} from "next/navigation";
 import {getPlan} from "../../../lib/memberships";
 import {getViewer} from "../../../lib/member";
 import {getAccountReview} from "../../../lib/account-approval";
@@ -10,7 +10,9 @@ import PaymentForm from "../payment-form";
 export const dynamic="force-dynamic";
 export default async function Checkout({params}:{params:Promise<{plan:string}>}){
  const {plan:id}=await params; const plan=getPlan(id);if(!plan)notFound();
- const [viewer,flags]=await Promise.all([getViewer(),db()`SELECT value FROM public.fim_site_settings WHERE key='payments_open'`]);
+ const viewer=await getViewer();
+ if(!viewer)redirect("/account/login?next="+encodeURIComponent("/checkout/"+plan.id));
+ const flags=await db()`SELECT value FROM public.fim_site_settings WHERE key='payments_open'`;
  const enabled=canAcceptPayment()&&flags[0]?.value==="true";
  const review=viewer?await getAccountReview(viewer.id):null;
  const number=process.env.FIM_MPESA_NUMBER||"251708195264";
@@ -24,8 +26,7 @@ export default async function Checkout({params}:{params:Promise<{plan:string}>})
   <h2>{number}</h2><p><strong>Semira Musa</strong></p>
   <p className="muted">Pay the exact membership amount, keep your confirmation, and upload its screenshot below for manual verification.</p>
  </section>
- {!viewer?<section className="checkout-note"><strong>Sign in or create an account first</strong><p>Register and choose this membership. Free access is immediate; paid membership activates after payment verification.</p><Link href="/account/login" className="btn">Sign in / Sign up →</Link></section>
- :review?.status==="rejected"?<section className="checkout-note"><strong>Account declined</strong><p>Your account cannot submit payments. {review.reviewNote||"Please contact the Fim Addis team for further information."}</p><Link href="/account" className="subtle-link">Account status →</Link></section>
+ {review?.status==="rejected"?<section className="checkout-note"><strong>Account declined</strong><p>Your account cannot submit payments. {review.reviewNote||"Please contact the Fim Addis team for further information."}</p><Link href="/account" className="subtle-link">Account status →</Link></section>
  
  :!enabled?<section className="checkout-note" role="status"><strong>Payments aren't open yet</strong><p>The payment upload service is temporarily unavailable. Please try again later.</p></section>
  :<PaymentForm plan={plan.id}/>}
