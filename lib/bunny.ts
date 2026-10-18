@@ -41,43 +41,49 @@ export async function getVideoDiagnostics():Promise<BunnyVideoSummary[]> {
 }
 
 /**
- * Fetch the exact thumbnail selected in the Bunny Stream library and return
- * bounded image bytes for the Fim Addis thumbnail store. Never exposes API
- * credentials, raw CDN URLs or token signatures to the browser.
+ * Copy the selected Bunny Stream thumbnail into Fim Addis, without exposing
+ * private API keys or private video files to browsers.
+ * CDN token authentication is separate from Stream embed authentication.
  */
-export async function downloadBunnyThumbnail(video:Pick<BunnyVideoSummary,"guid"|"thumbnailFileName">):
- Promise<{base64:string;mime:"image/jpeg"|"image/png"|"image/webp"}|null>{
+export type BunnyThumbnailResult=
+ |{ok:true;base64:string;mime:"image/jpeg"|"image/png"|"image/webp"}
+ |{ok:false;reason:"invalid_id"|"invalid_filename"|"cdn_unconfigured"|"denied_403"|"missing_404"|"redirect"|"unavailable"|"too_large"|"invalid_image"|"other_http"};
+export async function downloadBunnyThumbnail(video:Pick<BunnyVideoSummary,"guid"|"thumbnailFileName">):Promise<BunnyThumbnailResult>{
  const guid=String(video.guid||"");
- if(!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(guid))return null;
+ if(!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(guid))return {ok:false,reason:"invalid_id"};
  const name=String(video.thumbnailFileName||"thumbnail.jpg").trim();
- if(name.length>120||!/^[-A-Za-z0-9_.]+$/.test(name)||name==="."||name===".."||name.includes(".."))return null;
- const configured=String(process.env.BUNNY_STREAM_CDN_HOSTNAME||"").trim().replace(/^https:\/\//i,"").replace(/\/$/,"");
- if(!/^[a-z0-9-]+\.b-cdn\.net$/i.test(configured))throw new Error("Bunny Stream CDN hostname is missing or invalid.");
+ if(name.length>120||!/^[-A-Za-z0-9_.]+$/.test(name)||name==="."||name===".."||name.includes(".."))return {ok:false,reason:"invalid_filename"};
+ const host=String(process.env.BUNNY_STREAM_CDN_HOSTNAME||"").trim().replace(/^https:\/\//i,"").replace(/\/$/,"");
+ if(!/^[a-z0-9-]+\.b-cdn\.net$/i.test(host))return {ok:false,reason:"cdn_unconfigured"};
  const pathname="/"+guid+"/"+encodeURIComponent(name);
- const base="https://"+configured+pathname;
- const options={cache:"no-store" as const,redirect:"error" as const,signal:AbortSignal.timeout(6500),headers:{Referer:"https://fim-addis.vercel.app/"}};
+ const url="https://"+host+pathname;
+ const options={cache:"no-store" as const,redirect:"manual" as const,signal:AbortSignal.timeout(6500),headers:{Referer:"https://fim-addis.vercel.app/"}};
  let response:Response;
  try{
-  response=await fetch(base,options);
-  // Libraries with pull-zone token authentication require a signed CDN URL.
-  if(response.status===403&&process.env.BUNNY_STREAM_TOKEN_KEY){
+  response=await fetch(url,options);
+  // Stream embed-key auth does NOT sign the separate CDN pull-zone URLs.
+  if(response.status===403&&process.env.BUNNY_CDN_TOKEN_KEY){
    const {createHmac}=await import("node:crypto");
    const expires=Math.floor(Date.now()/1000)+300;
-   const signature="HS256-"+createHmac("sha256",process.env.BUNNY_STREAM_TOKEN_KEY)
-     .update(pathname+expires).digest("base64url");
-   response=await fetch(base+"?token="+encodeURIComponent(signature)+"&expires="+expires,options);
+   const token="HS256-"+createHmac("sha256",process.env.BUNNY_CDN_TOKEN_KEY)
+    .update(pathname+expires).digest("base64url");
+   response=await fetch(url+"?token="+encodeURIComponent(token)+"&expires="+expires,options);
   }
- }catch{return null;}
- if(!response.ok)return null;
- if(Number(response.headers.get("content-length")||0)>500000)return null;
+ }catch{return {ok:false,reason:"unavailable"};}
+ if(response.status===403)return {ok:false,reason:"denied_403"};
+ if(response.status===404)return {ok:false,reason:"missing_404"};
+ if(response.status>=300&&response.status<400)return {ok:false,reason:"redirect"};
+ if(!response.ok)return {ok:false,reason:"other_http"};
+ if(Number(response.headers.get("content-length")||0)>500000)return {ok:false,reason:"too_large"};
  let bytes:Buffer;
- try{bytes=Buffer.from(await response.arrayBuffer())}catch{return null;}
- if(bytes.length<12||bytes.length>500000)return null;
+ try{bytes=Buffer.from(await response.arrayBuffer())}catch{return {ok:false,reason:"unavailable"};}
+ if(bytes.length>500000)return {ok:false,reason:"too_large"};
+ if(bytes.length<12)return {ok:false,reason:"invalid_image"};
  const magic=bytes.subarray(0,12).toString("hex");
  let mime:"image/jpeg"|"image/png"|"image/webp"|null=null;
  if(magic.startsWith("ffd8ff"))mime="image/jpeg";
  else if(magic.startsWith("89504e470d0a1a0a"))mime="image/png";
  else if(bytes.subarray(0,4).toString("ascii")==="RIFF"&&bytes.subarray(8,12).toString("ascii")==="WEBP")mime="image/webp";
- if(!mime)return null;
- return {base64:bytes.toString("base64"),mime};
+ if(!mime)return {ok:false,reason:"invalid_image"};
+ return {ok:true,base64:bytes.toString("base64"),mime};
 }
