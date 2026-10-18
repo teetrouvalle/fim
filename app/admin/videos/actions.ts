@@ -1,10 +1,23 @@
 "use server";
 import {revalidatePath} from "next/cache";
 import {getAdminSession,db} from "../../../lib/admin";
-import {getVideoDiagnostics} from "../../../lib/bunny";
+import {getVideoDiagnostics,downloadBunnyThumbnail,type BunnyVideoSummary} from "../../../lib/bunny";
 
 type State={message:string;ok?:boolean;savedAt?:string};
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Copy missing Bunny-selected artwork to Fim Addis without overwriting manual images. */
+async function syncSelectedThumbnail(video:BunnyVideoSummary):Promise<"saved"|"skipped">{
+ const image=await downloadBunnyThumbnail(video);
+ if(!image)return "skipped";
+ const sql=db();
+ const updated=await sql`UPDATE public.fim_videos
+ SET thumbnail_bytes=decode(${image.base64},'base64'),thumbnail_mime=${image.mime},
+     thumbnail_updated_at=now(),updated_at=now()
+ WHERE bunny_guid=${video.guid} AND thumbnail_bytes IS NULL
+ RETURNING id`;
+ return updated.length?"saved":"skipped";
+}
+
 function failureMessage(error:unknown, operation:"import"|"save"){
   console.error(`[Fim Addis Video Manager] ${operation} failed`,error instanceof Error?{name:error.name,message:error.message}:String(error));
   const code=error&&typeof error==="object"&&"code" in error&&typeof error.code==="string"?error.code:"UNKNOWN";
@@ -36,8 +49,11 @@ export async function importBunnyVideo(_state:State|null,form:FormData):Promise<
    )
    SELECT added.id FROM added JOIN audit ON true`;
   if(!result.length)return {message:"This Bunny video is already in the catalog. Find it under Catalog entries below."};
+  let thumbnailSaved=false;
+  try{thumbnailSaved=(await syncSelectedThumbnail(video))==="saved"}
+  catch(error){console.error("[Bunny thumbnail import]",error instanceof Error?error.message:"Unavailable");}
   revalidatePath("/admin/videos");
-  return {ok:true,message:"Imported successfully. It is saved as a private draft; review its rights and rating before publishing."};
+  return {ok:true,message:"Video imported as a private draft. "+(thumbnailSaved?"The selected Bunny thumbnail was imported. ":"Its Bunny thumbnail could not be copied; you can retry with Sync all. ")+"Confirm rights and rating before publishing."};
  }catch(e){return {message:failureMessage(e,"import")}}
 }
 
@@ -73,11 +89,29 @@ export async function syncBunnyUploads(_state:State|null):Promise<State>{
    )
    SELECT count(*)::int AS imported FROM audit`;
   const imported=Number(result[0]?.imported||0);
+  // Backfill existing videos as well as new imports. Only videos missing a
+  // locally stored thumbnail are fetched; custom Fim Addis art stays intact.
+  const missing=await sql`SELECT bunny_guid FROM public.fim_videos
+    WHERE bunny_guid=ANY(${guids}::text[]) AND thumbnail_bytes IS NULL LIMIT 100`;
+  const missingGuids=new Set(missing.map(v=>String(v.bunny_guid).toLowerCase()));
+  const targets=valid.filter(v=>missingGuids.has(v.guid.toLowerCase()));
+  let thumbnails=0,unavailable=0;
+  // Batch requests to avoid flooding Bunny and slowing the administrator UI.
+  for(let i=0;i<targets.length;i+=5){
+   const results=await Promise.all(targets.slice(i,i+5).map(async video=>{
+    try{return await syncSelectedThumbnail(video)}
+    catch(error){
+     console.error("[Bunny thumbnail sync]",error instanceof Error?error.message:"Unavailable");
+     return "skipped" as const;
+    }
+   }));
+   thumbnails+=results.filter(x=>x==="saved").length;
+   unavailable+=results.filter(x=>x==="skipped").length;
+  }
   revalidatePath("/admin/videos");
+  revalidatePath("/");
   revalidatePath("/videos");
-  return {ok:true,message:imported
-   ?`Synced Bunny: ${imported} new video(s) imported as drafts. Scroll to Manage free and paid films, review each video, and publish when ready.`
-   :`All ${valid.length} Bunny video(s) are already imported. Open their catalog entries below and ensure Published, distribution rights, and content-rating review are checked.`};
+  return {ok:true,message:`Bunny sync complete: ${imported} new video(s) imported as private drafts; ${thumbnails} Bunny thumbnail(s) saved. ${unavailable?`${unavailable} thumbnail(s) could not be fetched (check Bunny CDN access or selected artwork). `:""}Manually uploaded Fim Addis thumbnails were kept. Review rights, rating and publication for new videos.`};
  }catch(error){return {message:failureMessage(error,"import")}}
 }
 
