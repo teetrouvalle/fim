@@ -1,46 +1,63 @@
 "use client";
 import {useActionState,useState} from "react";
+import {cryptoWallets,findCryptoWallet} from "../../lib/crypto-payments";
 import {submitMpesaPayment} from "./actions";
 
-export default function PaymentForm({plan}:{plan:string}){
+type Props={
+ plan:string;
+ cryptoPriceUsd:number;
+ mpesaNumber:string;
+ paymentEnabled:boolean;
+ accountEligible:boolean;
+ unavailableMessage:string;
+};
+export default function PaymentForm({plan,cryptoPriceUsd,mpesaNumber,paymentEnabled,accountEligible,unavailableMessage}:Props){
  const [state,act,busy]=useActionState(submitMpesaPayment,null);
  const [method,setMethod]=useState("mpesa");
- const wallets=[
-  {id:"usdt_bep20",label:"USDT · BNB Smart Chain (BEP20)",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdt_eth",label:"USDT · Ethereum",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdt_arb",label:"USDT · Arbitrum",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdt_op",label:"USDT · Optimism",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdc_arb",label:"USDC · Arbitrum",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdc_eth",label:"USDC · Ethereum",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdc_base",label:"USDC · Base",address:"0x48839599Fe61C06FDca02cACC1E54a306ad5Dab3"},
-  {id:"usdc_sol",label:"USDC · Solana",address:"9embAL4QMf3YzyQLJY2oxfoaDddKcNthviAuWJaiTu2Z"},
-  {id:"usdt_sol",label:"USDT · Solana",address:"9embAL4QMf3YzyQLJY2oxfoaDddKcNthviAuWJaiTu2Z"},
-  {id:"usdt_trc20",label:"USDT · Tron (TRC20)",address:"TLakkQZgq8JzedA17BrcVi2gUKoPcX2tdg"},
-  {id:"btc",label:"BTC · Bitcoin",address:"bc1q8r4vgkh3ynzd65p2vhlf2f2l964xuk7fxfntv5"}
- ];
- const wallet=wallets.find(w=>w.id===method);
+ const wallet=findCryptoWallet(method);
+ const canSubmit=paymentEnabled&&accountEligible;
  return <section className="account-panel" style={{marginTop:24}}>
-  <p className="eyebrow">PAYMENT VERIFICATION</p>
-  <h2>Upload your payment screenshot</h2>
-  <label htmlFor="payment-network">Payment method and network</label>
-  <select id="payment-network" value={method} onChange={e=>setMethod(e.target.value)}><option value="mpesa">M-Pesa</option>{wallets.map(w=><option key={w.id} value={w.id}>{w.label}</option>)}</select>
-  {wallet&&<div className="checkout-note"><strong>{wallet.label}</strong><p className="crypto-address">{wallet.address}</p><button type="button" className="account-alt-button" onClick={()=>navigator.clipboard.writeText(wallet.address)}>Copy wallet address</button><p className="tiny muted">Use only the selected network. Confirm the cryptocurrency amount with support before sending; the membership price above is in ETB. Wrong-network transfers may be lost.</p></div>}
-  <p className="muted">After transferring the exact plan amount to the recipient above, enter your transaction reference and upload a clear screenshot of the payment confirmation. Your membership becomes active only after the administrator verifies the funds.</p>
-  {state?.ok?<div className="checkout-note" role="status">
-   <strong>Payment proof received</strong>
-   <p>{state.message}</p>
-   <p className="muted">Submission reference: <code>{state.reference}</code></p>
-   <p><a className="subtle-link" href="/account">View payment status →</a></p>
-  </div>:<form className="admin-form" action={act}>
-   <input type="hidden" name="plan" value={plan}/>
-   <input type="hidden" name="channel" value="website"/><input type="hidden" name="payment_method" value={method}/>
-   <label htmlFor="transaction">{wallet?"Blockchain transaction hash":"Payment transaction reference"}</label>
-   <input id="transaction" name="transaction" placeholder={wallet?"Transaction hash from blockchain explorer":"Reference from your payment confirmation"} minLength={6} maxLength={80} required autoComplete="off"/>
-   <label htmlFor="receipt">Payment screenshot (required)</label>
-   <input id="receipt" name="receipt" type="file" accept="image/png,image/jpeg,application/pdf" required/>
-   <p className="tiny muted">PNG, JPG or PDF · maximum 900 KB. Make sure the amount, recipient, and transaction reference are readable.</p>
-   {state?.message&&<p className="form-alert" role="status">{state.message}</p>}
-   <button className="btn" disabled={busy}>{busy?"Uploading…":"Submit payment screenshot →"}</button>
-  </form>}
+  <p className="eyebrow">PAYMENT METHOD</p>
+  <h2>Choose how to pay</h2>
+  <div className="admin-form">
+   <label htmlFor="payment-network">Method and network</label>
+   <select id="payment-network" value={method} onChange={e=>setMethod(e.target.value)}>
+    <option value="mpesa">M-Pesa · ETB</option>
+    {cryptoWallets.map(w=><option key={w.id} value={w.id}>{w.currency} · {w.network}</option>)}
+   </select>
+  </div>
+  <div className="checkout-note" style={{marginTop:16}}>
+   <p className="eyebrow">AMOUNT DUE</p>
+   {wallet?<><strong>{wallet.currency==="BTC"?"$"+cryptoPriceUsd.toFixed(2)+" USD equivalent in BTC":cryptoPriceUsd.toFixed(2)+" "+wallet.currency}</strong>
+    <p className="muted">Fixed crypto price: ${cryptoPriceUsd.toFixed(2)} USD. Network fees are extra; the ETB price does not determine your crypto amount.</p></>
+    :<><strong>M-Pesa payment in ETB</strong><p className="muted">Pay the ETB membership price shown above.</p></>}
+  </div>
+  {!canSubmit?<div className="checkout-note" role="status"><strong>Payment submission unavailable</strong><p>{unavailableMessage}</p><p className="muted">Payment options are shown for reference only. Do not send funds while submissions are unavailable.</p></div>:<>
+   {wallet?<div className="checkout-note">
+    <p className="eyebrow">RECEIVING WALLET</p><strong>{wallet.currency} · {wallet.network}</strong>
+    <p className="crypto-address">{wallet.address}</p>
+    <button type="button" className="account-alt-button" onClick={()=>void navigator.clipboard.writeText(wallet.address)}>Copy address</button>
+    <p className="tiny muted">Send only {wallet.currency} on {wallet.network}. Sending on the wrong network or using the wrong token may permanently lose funds.</p>
+    {wallet.currency==="BTC"&&<p className="tiny muted">The BTC amount changes with the Bitcoin/USD rate. Check a current quote before transferring; we manually verify that the value received covers ${cryptoPriceUsd.toFixed(2)} USD.</p>}
+   </div>:<div className="checkout-note">
+    <p className="eyebrow">M-PESA RECIPIENT</p><h2>{mpesaNumber}</h2><p><strong>Semira Musa</strong></p>
+   </div>}
+   <p className="muted" style={{lineHeight:1.7}}>After paying, provide the transaction reference and a clear payment screenshot. Access is granted only after an administrator independently verifies receipt of the funds.</p>
+   {state?.ok?<div className="checkout-note" role="status">
+    <strong>Payment proof received</strong><p>{state.message}</p>
+    <p className="muted">Submission reference: <code>{state.reference}</code></p>
+    <p><a className="subtle-link" href="/account">View payment status →</a></p>
+   </div>:<form className="admin-form" action={act}>
+    <input type="hidden" name="plan" value={plan}/>
+    <input type="hidden" name="payment_method" value={method}/>
+    <label htmlFor="transaction">{wallet?"Blockchain transaction hash / signature":"M-Pesa transaction reference"}</label>
+    <input id="transaction" key={method} name="transaction" placeholder={wallet?"Paste the complete on-chain transaction hash":"Reference from your M-Pesa confirmation"} minLength={6} maxLength={128} required autoComplete="off"/>
+    <label htmlFor="receipt">Payment screenshot (required)</label>
+    <input id="receipt" name="receipt" type="file" accept="image/png,image/jpeg,application/pdf" required/>
+    <p className="tiny muted">PNG, JPG or PDF · maximum 900 KB. Screenshots alone do not confirm payment.</p>
+    {state?.message&&<p className="form-alert" role="status">{state.message}</p>}
+    <button className="btn" disabled={busy}>{busy?"Submitting…":"Submit payment for review →"}</button>
+   </form>}
+  </>}
  </section>;
 }
