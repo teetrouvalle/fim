@@ -14,7 +14,7 @@ export const cryptoWallets=[
 ] as const;
 export function findCryptoWallet(id:string){return cryptoWallets.find(w=>w.id===id);}
 export function parseCryptoReference(reference:string){
- const match=/^CRYPTO:([a-z0-9_]+):([A-Za-z0-9]+)$/.exec(reference);
+ const match=/^CRYPTO:([a-z0-9_]+):([A-Za-z0-9]*)$/.exec(reference);
  if(!match)return null;
  const wallet=findCryptoWallet(match[1]);
  return wallet?{wallet,transaction:match[2]}:null;
