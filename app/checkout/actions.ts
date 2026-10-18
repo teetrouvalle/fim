@@ -3,6 +3,8 @@ import {revalidatePath} from "next/cache";
 import {getViewer} from "../../lib/member";
 import {accountIsApproved} from "../../lib/account-approval";
 import {db} from "../../lib/admin";
+import {createHash} from "node:crypto";
+import {findCryptoWallet,isValidCryptoTransaction} from "../../lib/crypto-payments";
 export type SubmissionState={message:string;reference?:string;ok?:boolean};
 const MAX_RECEIPT=900_000;
 export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormData):Promise<SubmissionState>{
@@ -10,13 +12,14 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
  const user=await getViewer();if(!user)return {message:"Please sign in before submitting payment proof."};
  if(!await accountIsApproved(user.id))return {message:"This account cannot submit payments. Contact support."};
  const plan=String(form.get("plan")||"").toLowerCase();
- const channel="website";
  const method=String(form.get("payment_method")||"mpesa");
- const cryptoMethods=["usdt_bep20","usdt_eth","usdt_arb","usdt_op","usdc_arb","usdc_eth","usdc_base","usdc_sol","usdt_sol","usdt_trc20","btc"];
- if(method!=="mpesa"&&!cryptoMethods.includes(method))return {message:"Invalid payment network."};
- const transaction=String(form.get("transaction")||"").trim().toUpperCase();
+ const wallet=findCryptoWallet(method);
+ if(method!=="mpesa"&&!wallet)return {message:"Invalid payment method or network."};
+ const rawTransaction=String(form.get("transaction")||"").trim();
+ const transaction=wallet?rawTransaction:rawTransaction.toUpperCase();
  if(!["basic","plus","premium"].includes(plan))return {message:"Invalid membership plan."};
- if(!/^[A-Z0-9-]{6,80}$/.test(transaction))return {message:"Enter the payment transaction reference (6–80 letters or numbers)."};
+ if(wallet&&!isValidCryptoTransaction(wallet.id,transaction))return {message:"Enter a complete, valid on-chain transaction hash for the selected network."};
+ if(!wallet&&!/^[A-Z0-9-]{6,80}$/.test(transaction))return {message:"Enter an M-Pesa transaction reference (6–80 letters or numbers)."};
  const raw=form.get("receipt");
  const file=raw&&typeof raw!=="string"&&raw.size>0?raw:null;
  if(!file)return {message:"Please upload a payment screenshot (PNG/JPG) or PDF."};
@@ -37,9 +40,16 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
   const plans=await sql`SELECT price_etb FROM public.fim_plans WHERE id=${plan}`;
   const amount=plans[0]?.price_etb;
   if(!Number.isInteger(Number(amount))||Number(amount)<=0)return {message:"Plan not available."};
-  const storedReference=method==="mpesa"?transaction:`${method.toUpperCase()}-${transaction}`;
+  // Existing Neon schema permits only payment_method='mpesa'. Store the selected
+  // crypto method and original CASE-SENSITIVE hash in reference. The unique
+  // transaction fingerprint occupies the legacy ID column, allowing manual
+  // crypto verification without changing production constraints.
+  const storedReference=wallet?"CRYPTO:"+wallet.id+":"+transaction:transaction;
+  const uniqueTransactionId=wallet
+   ?"CR-"+createHash("sha256").update(wallet.id+":"+transaction).digest("hex")
+   :transaction;
   const row=await sql`INSERT INTO public.fim_payment_reviews (account_user_id,account_email,plan_id,amount_etb,reference,mpesa_transaction_id,receipt_channel,payment_method,receipt_bytes,receipt_mime,receipt_filename,status)
-     VALUES (${user.id},${user.email},${plan},${Number(amount)},${storedReference},${storedReference},${channel},${method==="mpesa"?"mpesa":"crypto"},CASE WHEN ${encoded}='' THEN NULL ELSE decode(${encoded},'base64') END,${mime||null},${filename||null},'pending') RETURNING id`;
+     VALUES (${user.id},${user.email},${plan},${Number(amount)},${storedReference},${uniqueTransactionId},'website','mpesa',CASE WHEN ${encoded}='' THEN NULL ELSE decode(${encoded},'base64') END,${mime||null},${filename||null},'pending') RETURNING id`;
   revalidatePath("/account");
   const id=String(row[0]?.id||"");
   return {ok:true,reference:id,message:"Your screenshot was uploaded successfully. Your membership will activate after the administrator verifies your payment."};
