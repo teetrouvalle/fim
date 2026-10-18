@@ -55,7 +55,7 @@ export async function downloadBunnyThumbnail(video:Pick<BunnyVideoSummary,"guid"
  if(!/^[a-z0-9-]+\.b-cdn\.net$/i.test(configured))throw new Error("Bunny Stream CDN hostname is missing or invalid.");
  const pathname="/"+guid+"/"+encodeURIComponent(name);
  const base="https://"+configured+pathname;
- const options={cache:"no-store" as const,redirect:"error" as const,signal:AbortSignal.timeout(6500)};
+ const options={cache:"no-store" as const,redirect:"error" as const,signal:AbortSignal.timeout(6500),headers:{Referer:"https://fim-addis.vercel.app/"}};
  let response:Response;
  try{
   response=await fetch(base,options);
