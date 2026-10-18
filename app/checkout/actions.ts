@@ -3,7 +3,7 @@ import {revalidatePath} from "next/cache";
 import {getViewer} from "../../lib/member";
 import {accountIsApproved} from "../../lib/account-approval";
 import {db} from "../../lib/admin";
-import {createHash} from "node:crypto";
+import {createHash,randomUUID} from "node:crypto";
 import {findCryptoWallet,isValidCryptoTransaction} from "../../lib/crypto-payments";
 export type SubmissionState={message:string;reference?:string;ok?:boolean};
 const MAX_RECEIPT=900_000;
@@ -18,8 +18,8 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
  const rawTransaction=String(form.get("transaction")||"").trim();
  const transaction=wallet?rawTransaction:rawTransaction.toUpperCase();
  if(!["basic","plus","premium"].includes(plan))return {message:"Invalid membership plan."};
- if(wallet&&!isValidCryptoTransaction(wallet.id,transaction))return {message:"Enter a complete, valid on-chain transaction hash for the selected network."};
- if(!wallet&&!/^[A-Z0-9-]{6,80}$/.test(transaction))return {message:"Enter an M-Pesa transaction reference (6–80 letters or numbers)."};
+ if(wallet&&transaction&&!isValidCryptoTransaction(wallet.id,transaction))return {message:"Enter a complete, valid on-chain transaction hash for the selected network."};
+ if(!wallet&&transaction&&!/^[A-Z0-9-]{6,80}$/.test(transaction))return {message:"Enter an M-Pesa transaction reference (6–80 letters or numbers)."};
  const raw=form.get("receipt");
  const file=raw&&typeof raw!=="string"&&raw.size>0?raw:null;
  if(!file)return {message:"Please upload a payment screenshot (PNG/JPG) or PDF."};
@@ -44,10 +44,10 @@ export async function submitMpesaPayment(_prev:SubmissionState|null,form:FormDat
   // crypto method and original CASE-SENSITIVE hash in reference. The unique
   // transaction fingerprint occupies the legacy ID column, allowing manual
   // crypto verification without changing production constraints.
-  const storedReference=wallet?"CRYPTO:"+wallet.id+":"+transaction:transaction;
-  const uniqueTransactionId=wallet
-   ?"CR-"+createHash("sha256").update(wallet.id+":"+transaction).digest("hex")
-   :transaction;
+  const storedReference=wallet?"CRYPTO:"+wallet.id+":"+transaction:transaction||"";
+  const uniqueTransactionId=transaction
+   ?(wallet?"CR-"+createHash("sha256").update(wallet.id+":"+transaction).digest("hex"):transaction)
+   :"RECEIPT-"+randomUUID();
   const row=await sql`INSERT INTO public.fim_payment_reviews (account_user_id,account_email,plan_id,amount_etb,reference,mpesa_transaction_id,receipt_channel,payment_method,receipt_bytes,receipt_mime,receipt_filename,status)
      VALUES (${user.id},${user.email},${plan},${Number(amount)},${storedReference},${uniqueTransactionId},'website','mpesa',CASE WHEN ${encoded}='' THEN NULL ELSE decode(${encoded},'base64') END,${mime||null},${filename||null},'pending') RETURNING id`;
   revalidatePath("/account");
