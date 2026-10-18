@@ -89,6 +89,7 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
  const description=String(form.get("description")||"").trim().slice(0,2400);
  const tier=String(form.get("tier")||"basic");
  const isFree=form.get("is_free")==="yes";
+ const showOnHome=form.get("show_on_home")==="yes";
  const rights=form.get("rights")==="yes";
  const rating=form.get("rating")==="yes";
  const requestedPublication=form.get("published")==="yes";
@@ -141,7 +142,7 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
    WITH updated AS (
     UPDATE public.fim_videos
     SET title=${title},description=${description},tier=${tier},
-        is_free=${isFree},rights_verified=${rights},rating_reviewed=${rating},
+        is_free=${isFree},show_on_home=${showOnHome},rights_verified=${rights},rating_reviewed=${rating},
         thumbnail_bytes=CASE WHEN ${thumbnailAction}::text='remove' THEN NULL
           WHEN ${thumbnailAction}::text='replace' THEN decode(${thumbnailData}::text,'base64')
           ELSE thumbnail_bytes END,
@@ -160,6 +161,7 @@ export async function updateVideo(_state:State|null,form:FormData):Promise<State
    SELECT updated.id,updated.updated_at,updated.published FROM updated JOIN audit ON true`;
   if(!result.length)return {message:"Video could not be updated. Refresh the page and retry."};
   revalidatePath("/admin/videos");
+  revalidatePath("/");
   revalidatePath("/videos");
   revalidatePath(`/videos/${id}`);
   const timestamp=new Date(result[0].updated_at).toISOString();
