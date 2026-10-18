@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {getAdminSession,db} from "../../lib/admin";
+import {getPlan} from "../../lib/memberships";
 export const dynamic="force-dynamic";
 export const metadata={title:"Administration | Fim Addis",robots:{index:false,follow:false}};
 export default async function Admin(){
@@ -23,7 +24,7 @@ export default async function Admin(){
  <article><span>Pending customer reviews</span><strong>{Number(accounts[0]?.count||0)}</strong><small>Email and phone customers</small></article></div>
  <section className="admin-quicklinks"><Link href="/admin/accounts" className="btn">Manage accounts & tiers →</Link><Link href="/admin/payments" className="account-alt-button">Review payments ({payments.filter(p=>p.status==="pending").length}) →</Link><Link href="/admin/videos" className="account-alt-button">Manage free & paid catalog →</Link></section>
  <section className="admin-section"><h2>Playback diagnostics</h2><p className="muted">Server-side checks only. Secret values are never displayed.</p><div className="admin-table-wrap"><table className="admin-table"><tbody><tr><th>Vercel playback switch</th><td>{process.env.FIM_PLAYBACK_OPEN==="true"?"Enabled":"Disabled or missing"}</td></tr><tr><th>Neon playback switch</th><td>{playbackSettings[0]?.value==="true"?"Enabled":"Disabled or missing"}</td></tr><tr><th>Bunny token signing key</th><td>{process.env.BUNNY_STREAM_TOKEN_KEY?.trim()?"Present":"Missing or empty"}</td></tr><tr><th>Bunny library ID</th><td>{process.env.BUNNY_STREAM_LIBRARY_ID?.trim()?"Present":"Missing or empty"}</td></tr><tr><th>Published reviewed videos</th><td>{videos.filter(v=>v.published&&v.rights_verified&&v.rating_reviewed).length}</td></tr></tbody></table></div></section>
- <section className="admin-section"><h2>Membership prices</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Plan</th><th>30-day price</th></tr></thead><tbody>{plans.map(p=><tr key={p.id}><td>{p.id}</td><td>{Number(p.price_etb).toLocaleString()} ETB</td></tr>)}</tbody></table></div></section>
+ <section className="admin-section"><h2>Membership prices</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Plan</th><th>30-day price</th></tr></thead><tbody>{plans.map(p=><tr key={p.id}><td>{p.id}</td><td>{Number(p.price_etb).toLocaleString()} ETB · Crypto: ${getPlan(String(p.id))?.priceCryptoUsd.toFixed(2)} USD</td></tr>)}</tbody></table></div></section>
  <section className="admin-section"><h2>Video overview</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Video</th><th>Access</th><th>Status</th></tr></thead><tbody>{videos.map(v=><tr key={v.id}><td>{v.title}</td><td>{v.is_free?"FREE":v.tier}</td><td>{v.published?"Published":"Draft"}</td></tr>)}</tbody></table></div></section>
  </main>;
 }
