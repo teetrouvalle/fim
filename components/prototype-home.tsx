@@ -31,11 +31,13 @@ const copy = {
     footer: "የአባልነት ክፍያና የቪዲዮ መመልከቻ አገልግሎት የተፈላጊ ፈቃዶችና የደህንነት ምርመራ ሲጠናቀቅ ይከፈታል።", badge: "18+ ማሳሰቢያ"
   }
 } as const;
-type Film={id:string;title:string;description:string;tier:string;is_free:boolean;has_thumbnail:boolean;thumbnail_version:string};
-export default function FimAddisHome({signedIn,currentTier,films}:{signedIn:boolean;currentTier:string;films:Film[]}) {
+type Film={id:string;title:string;description:string;tier:string;is_free:boolean;show_on_home:boolean;has_thumbnail:boolean;thumbnail_version:string};
+export default function FimAddisHome({signedIn,hasPaidMembership,currentTier,films}:{signedIn:boolean;hasPaidMembership:boolean;currentTier:string;films:Film[]}) {
   const [showMembers,setShowMembers]=useState(false);
   const freeFilms=films.filter(f=>f.is_free).slice(0,3);
-  const memberFilms=films.filter(f=>!f.is_free);
+  const memberFilms=films.filter(f=>!f.is_free&&f.show_on_home);
+  const featuredMemberFilms=memberFilms.slice(0,12);
+  const extraMemberFilms=memberFilms.slice(12);
   const filmCard=(film:Film)=><article key={film.id} className="film-card"><a className="film-card-link" href={`/videos/${film.id}`}><div className="film-art">{film.has_thumbnail?<Image unoptimized className="film-thumb-image" src={`/videos/${film.id}/thumbnail?v=${encodeURIComponent(film.thumbnail_version)}`} width={600} height={338} alt={`${film.title} thumbnail`}/>:<span aria-label="Thumbnail not uploaded">ፍ</span>}</div><div className="film-body"><span className="eyebrow">{film.is_free?"FREE TO WATCH":film.tier.toUpperCase()+" MEMBERSHIP"}</span><h3>{film.title}</h3><p className="muted">{film.description||"Discover this Fim Addis film."}</p><span className="subtle-link">{film.is_free?"Watch free →":"View film →"}</span></div></a></article>;
   const [lang, setLang] = useState<Language>("en");
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
@@ -94,13 +96,18 @@ export default function FimAddisHome({signedIn,currentTier,films}:{signedIn:bool
         {freeFilms.length?<div className="film-grid">{freeFilms.map(filmCard)}</div>:<p className="muted">Free films are coming soon.</p>}
         <div className="catalog-status"><a href="/videos" className="subtle-link">Browse the complete library →</a></div>
         <div style={{marginTop:36}}>
-          <div className="library-heading"><div><p className="eyebrow">MEMBERS ONLY</p><h3>Member films</h3></div><button type="button" className="account-alt-button" aria-expanded={showMembers} onClick={()=>setShowMembers(!showMembers)}>{showMembers?"Hide member films −":`Show member films (${memberFilms.length}) +`}</button></div>
-          {showMembers&&(memberFilms.length?<div className="film-grid">{memberFilms.map(filmCard)}</div>:<p className="muted">Member films are coming soon.</p>)}
+          <div className="library-heading"><div><p className="eyebrow">MEMBER FILMS</p><h3>Paid films</h3></div><span className="muted">{featuredMemberFilms.length} featured</span></div>
+          {featuredMemberFilms.length?<div className="film-grid">{featuredMemberFilms.map(filmCard)}</div>:<p className="muted">Member films are coming soon.</p>}
+          {extraMemberFilms.length>0&&<div className="home-see-more">
+            {hasPaidMembership?<button type="button" className="btn home-see-more-action" aria-expanded={showMembers} aria-controls="home-member-extras" onClick={()=>setShowMembers(!showMembers)}>{showMembers?"Show less ↑":`See more videos (${extraMemberFilms.length}) ↓`}</button>
+            :<a className="btn home-see-more-action" href="/membership">See more videos · View membership plans →</a>}
+          </div>}
+          {hasPaidMembership&&extraMemberFilms.length>0&&<div id="home-member-extras">{showMembers&&<div className="film-grid" style={{marginTop:18}}>{extraMemberFilms.map(filmCard)}</div>}</div>}
         </div>
       </section>
       <section className="section memberships" id="membership">
         <div className="section-lead"><div><p className="eyebrow">{t.tiersTag}</p><h2>{t.tiers}</h2></div><p className="section-description">{t.tiersText}</p></div>
-        <div className="plan-grid">{plans.map((plan)=><article className={"plan "+(plan.featured?"highlight-plan":"")} key={plan.id}><span className="plan-count">0{plan.rank} / 03</span><h3>{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h3><p className="plan-price">{priceText(plan,lang)} {plan.priceEtb!==null?<small>{lang==="en"?"/ month":"/ ወር"}</small>:null}</p><ul className="feature-list">{plan.features.map((f,i)=><li key={i}>{f[lang]}</li>)}</ul><a href={"/checkout/"+plan.id} className="plan-foot">{lang==="en"?"View plan":"አባልነትን ይመልከቱ"}<span aria-hidden="true">↗</span></a></article>)}</div><p className="tiny muted" style={{marginTop:16}}>{lang==="en"?"Events and live sessions are offered when scheduled. In-person fan meetups require separate confirmation.":"የቀጥታ ዝግጅቶችና ስብሰባዎች በቀጠሮ ብቻ ይቀርባሉ።"}</p>
+        <div className="plan-grid">{plans.map((plan)=><article className={"plan "+(plan.featured?"highlight-plan":"")} key={plan.id}><span className="plan-count">0{plan.rank} / 03</span><h3>{plan.id.charAt(0).toUpperCase()+plan.id.slice(1)}</h3><p className="plan-price">{priceText(plan,lang)} {plan.priceEtb!==null?<small>{lang==="en"?"/ month":"/ ወር"}</small>:null}</p><ul className="feature-list">{plan.features.map((f,i)=><li key={i}>{f[lang]}</li>)}</ul><a href={signedIn?"/checkout/"+plan.id:"/account/login?next="+encodeURIComponent("/checkout/"+plan.id)} className="plan-foot">{lang==="en"?"View plan":"አባልነትን ይመልከቱ"}<span aria-hidden="true">↗</span></a></article>)}</div><p className="tiny muted" style={{marginTop:16}}>{lang==="en"?"Events and live sessions are offered when scheduled. In-person fan meetups require separate confirmation.":"የቀጥታ ዝግጅቶችና ስብሰባዎች በቀጠሮ ብቻ ይቀርባሉ።"}</p>
       </section>
       <section className="about-section" id="about"><p className="eyebrow">FIM ADDIS / ፍም አዲስ</p><h2>{t.aboutTitle}</h2><p>{t.aboutText}</p></section>
     </main>
