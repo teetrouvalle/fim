@@ -10,7 +10,7 @@ export default async function VideoManagement({searchParams}:{searchParams:Promi
  const query=await searchParams;
  const showBunnyUploads=query.bunny==="1";
  const sql=db();
- const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,thumbnail_bytes IS NOT NULL AS has_thumbnail,thumbnail_updated_at,rights_verified,rating_reviewed,published,show_on_home FROM public.fim_videos ORDER BY added_at DESC LIMIT 50`;
+ const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,thumbnail_bytes IS NOT NULL AS has_thumbnail,thumbnail_updated_at,rights_verified,rating_reviewed,published,show_on_home FROM public.fim_videos ORDER BY published ASC, added_at DESC LIMIT 50`;
  const libraryId=process.env.BUNNY_STREAM_LIBRARY_ID||"Not configured";
  let library:Awaited<ReturnType<typeof getVideoDiagnostics>>=[];let errorMessage="";
  if(showBunnyUploads){
@@ -42,11 +42,12 @@ export default async function VideoManagement({searchParams}:{searchParams:Promi
  <section className="admin-section">
  <p className="eyebrow">CATALOG ENTRIES</p>
  <h2>Manage free and paid films</h2>
- <p className="muted">Select a video to expand its settings and choose whether it appears in the homepage's paid-film selection. The three free films at the top of the homepage remain unchanged.</p>
+ <p className="muted"><strong>{videos.filter(v=>!v.published).length} video(s) still in drafts.</strong> Drafts appear first. Expand a draft, confirm distribution rights and content classification, check Published, then save. Videos are shown publicly only after all checks are complete.</p>
+ <p className="muted">Choose whether each paid video appears on the homepage. The three free films at the top of the homepage remain unchanged.</p>
  <div className="video-manager-list">
  {videos.length?videos.map(v=><details className="video-manager-item" key={String(v.id)}>
    <summary className="video-manager-summary">
-     <span className="video-manager-name">{String(v.title)}</span>
+     <span className="video-manager-name">{String(v.title)}{!v.published&&<span className="video-manager-draft"> · DRAFT</span>}</span>
      <span className="video-manager-tier">{v.is_free?"Free":v.tier==="purchase_only"?"Purchase only":String(v.tier).charAt(0).toUpperCase()+String(v.tier).slice(1)}</span>
    </summary>
    <div className="video-manager-details">
