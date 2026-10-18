@@ -8,7 +8,7 @@ export const metadata={title:"Video management | Fim Addis",robots:{index:false,
 export default async function VideoManagement(){
  const admin=await getAdminSession();if(!admin)redirect("/admin/login");
  const sql=db();
- const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,thumbnail_bytes IS NOT NULL AS has_thumbnail,thumbnail_updated_at,rights_verified,rating_reviewed,published FROM public.fim_videos ORDER BY added_at DESC LIMIT 50`;
+ const videos=await sql`SELECT id,bunny_guid,title,description,tier,is_free,thumbnail_bytes IS NOT NULL AS has_thumbnail,thumbnail_updated_at,rights_verified,rating_reviewed,published,show_on_home FROM public.fim_videos ORDER BY added_at DESC LIMIT 50`;
  const libraryId=process.env.BUNNY_STREAM_LIBRARY_ID||"Not configured";
  let library:Awaited<ReturnType<typeof getVideoDiagnostics>>=[];let errorMessage="";
  try{library=await getVideoDiagnostics()}
@@ -30,7 +30,7 @@ export default async function VideoManagement(){
  <section className="admin-section">
  <p className="eyebrow">CATALOG ENTRIES</p>
  <h2>Manage free and paid films</h2>
- <p className="muted">Select a video to expand its full settings. All entries stay collapsed until you need to edit them.</p>
+ <p className="muted">Select a video to expand its settings and choose whether it appears in the homepage's paid-film selection. The three free films at the top of the homepage remain unchanged.</p>
  <div className="video-manager-list">
  {videos.length?videos.map(v=><details className="video-manager-item" key={String(v.id)}>
    <summary className="video-manager-summary">
@@ -38,7 +38,7 @@ export default async function VideoManagement(){
      <span className="video-manager-tier">{v.is_free?"Free":v.tier==="purchase_only"?"Purchase only":String(v.tier).charAt(0).toUpperCase()+String(v.tier).slice(1)}</span>
    </summary>
    <div className="video-manager-details">
-     <EditVideo video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>
+     <EditVideo video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),show_on_home:Boolean(v.show_on_home),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>
      <div className="video-manager-delete"><DeleteVideo id={String(v.id)} title={String(v.title)}/></div>
    </div>
  </details>):<p className="muted">Import a video from Bunny first.</p>}
