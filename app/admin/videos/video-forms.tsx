@@ -5,7 +5,7 @@ import {deleteVideo,importBunnyVideo,updateVideo,syncBunnyUploads} from "./actio
 export function SyncBunnyUploads(){
  const [state,action,busy]=useActionState(syncBunnyUploads,null);
  return <form action={action} className="admin-form" style={{marginTop:18,marginBottom:22}}>
-  <button type="submit" className="btn" style={{alignSelf:"flex-start"}} disabled={busy}>{busy?"Syncing Bunny uploads…":"Sync all Bunny uploads as drafts →"}</button>
+  <button type="submit" className="btn" style={{alignSelf:"flex-start"}} disabled={busy}>{busy?"Syncing videos and thumbnails…":"Sync Bunny videos + thumbnails →"}</button>
   {state?.message&&<p role="status" className={state.ok?"save-confirmation":"form-alert"}>{state.message}</p>}
  </form>;
 }
