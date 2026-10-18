@@ -128,7 +128,7 @@ export async function syncBunnyUploads(_state:State|null):Promise<State>{
   revalidatePath("/admin/videos");
   revalidatePath("/");
   revalidatePath("/videos");
-  return {ok:true,message:`Bunny sync: ${imported} new draft(s), ${thumbnails} thumbnail(s) imported. ${errors?`Missing thumbnail details: ${errors} `:""}Manual thumbnails were kept. New videos still require rights, rating and publication review.`};
+  return {ok:!errors,message:`Bunny sync: ${imported} new draft(s), ${thumbnails} thumbnail(s) imported. ${errors?`Missing thumbnail details: ${errors} `:""}Manual thumbnails were kept. New videos still require rights, rating and publication review.`};
  }catch(error){return {message:failureMessage(error,"import")}}
 }
 
