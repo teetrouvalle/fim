@@ -5,6 +5,8 @@ import {db} from "../../lib/admin";
 import {getViewer,getEffectiveMembership} from "../../lib/member";
 import {getAccountReview} from "../../lib/account-approval";
 import {memberSignOut} from "./login/actions";
+import {parseCryptoReference} from "../../lib/crypto-payments";
+import {getPlan} from "../../lib/memberships";
 export const dynamic="force-dynamic";
 export const metadata={title:"My Account | Fim Addis",robots:{index:false,follow:false}};
 export default async function AccountPage(){
@@ -12,7 +14,7 @@ export default async function AccountPage(){
  const sql=db();
  const [membership,payments,review]=await Promise.all([
   getEffectiveMembership(user.id),
-  sql`SELECT id,plan_id,amount_etb,status,receipt_channel,created_at,review_note FROM public.fim_payment_reviews WHERE account_user_id=${user.id} ORDER BY created_at DESC LIMIT 30`,
+  sql`SELECT id,plan_id,amount_etb,status,reference,receipt_channel,created_at,review_note FROM public.fim_payment_reviews WHERE account_user_id=${user.id} ORDER BY created_at DESC LIMIT 30`,
   getAccountReview(user.id)
  ]);
  return <main className="shell account-page">
@@ -31,6 +33,6 @@ export default async function AccountPage(){
   {review.status!=="rejected"&&<Link href="/membership" className="subtle-link">Choose a membership plan →</Link>}
   {review.status==="rejected"&&review.reviewNote&&<p className="muted">Reason: {review.reviewNote}</p>}
  </section>
- <section className="admin-section"><h2>Payment history</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Submitted</th><th>Plan</th><th>Amount</th><th>Receipt via</th><th>Status</th></tr></thead><tbody>{payments.length?payments.map(p=><tr key={p.id}><td>{new Date(p.created_at).toLocaleDateString("en-GB")}</td><td>{p.plan_id}</td><td>{Number(p.amount_etb).toLocaleString()} ETB</td><td>{p.receipt_channel}</td><td>{p.status}</td></tr>):<tr><td colSpan={5}>No payments submitted.</td></tr>}</tbody></table></div></section>
+ <section className="admin-section"><h2>Payment history</h2><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Submitted</th><th>Plan</th><th>Amount</th><th>Receipt via</th><th>Status</th></tr></thead><tbody>{payments.length?payments.map(p=><tr key={p.id}><td>{new Date(p.created_at).toLocaleDateString("en-GB")}</td><td>{p.plan_id}</td><td>{parseCryptoReference(String(p.reference||""))?"$"+getPlan(String(p.plan_id))?.priceCryptoUsd.toFixed(2)+" USD":Number(p.amount_etb).toLocaleString()+" ETB"}</td><td>{parseCryptoReference(String(p.reference||""))?.wallet.network||"M-Pesa"} · {p.receipt_channel}</td><td>{p.status}</td></tr>):<tr><td colSpan={5}>No payments submitted.</td></tr>}</tbody></table></div></section>
  </main>;
 }
