@@ -18,8 +18,10 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  if(!rows.length)notFound();
  const video=rows[0];const free=Boolean(video.is_free);
  let entitled=free;
+ let signedIn=false;
  if(!free){
   const user=await getViewer();
+  signedIn=Boolean(user);
   if(user&&(await getAccountReview(user.id)).status!=="rejected"){
    const membership=await getEffectiveMembership(user.id);
    const rank={basic:1,plus:2,premium:3}[String(video.tier) as "basic"|"plus"|"premium"]||99;
@@ -45,7 +47,7 @@ export default async function WatchPage({params}:{params:Promise<{id:string}>}){
  <Link href="/videos" className="subtle-link">← Film library</Link>
  <p className="eyebrow" style={{marginTop:34}}>{free?"FREE TO WATCH":"FIM ADDIS MEMBERSHIP"}</p>
  <h1 className="page-title">{video.title}</h1><p className="muted">{video.description}</p>
- {!entitled?<div className="checkout-note"><h2>You are not subscribed to watch this film</h2><p>This video requires an active eligible membership. Choose a plan below to unlock access after payment approval.</p><PlanPrompt title={String(video.title)} minTier={String(video.tier)} purchaseOnly={video.tier==="purchase_only"}/></div>
+ {!entitled?<div className="checkout-note"><h2>You are not subscribed to watch this film</h2><p>This video requires an active eligible membership. Choose a plan below to unlock access after payment approval.</p><PlanPrompt title={String(video.title)} minTier={String(video.tier)} purchaseOnly={video.tier==="purchase_only"} signedIn={signedIn}/></div>
  :!available?<div className="checkout-note" role="status"><h2>{free?"Free film":"Film"} currently unavailable</h2><p>{playbackIssue}</p></div>
  :<div className="signed-player"><iframe src={iframe} title={String(video.title)} allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/></div>}
  </main>;
