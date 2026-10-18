@@ -1,21 +1,22 @@
 "use server";
 import {revalidatePath} from "next/cache";
 import {getAdminSession,db} from "../../../lib/admin";
-import {getVideoDiagnostics,downloadBunnyThumbnail,type BunnyVideoSummary} from "../../../lib/bunny";
+import {getVideoDiagnostics,downloadBunnyThumbnail,type BunnyVideoSummary,type BunnyThumbnailResult} from "../../../lib/bunny";
 
 type State={message:string;ok?:boolean;savedAt?:string};
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 /** Copy missing Bunny-selected artwork to Fim Addis without overwriting manual images. */
-async function syncSelectedThumbnail(video:BunnyVideoSummary):Promise<"saved"|"skipped">{
+type ThumbnailSyncResult="saved"|"already"|Extract<BunnyThumbnailResult,{ok:false}>["reason"];
+async function syncSelectedThumbnail(video:BunnyVideoSummary):Promise<ThumbnailSyncResult>{
  const image=await downloadBunnyThumbnail(video);
- if(!image)return "skipped";
+ if(!image.ok)return image.reason;
  const sql=db();
  const updated=await sql`UPDATE public.fim_videos
  SET thumbnail_bytes=decode(${image.base64},'base64'),thumbnail_mime=${image.mime},
      thumbnail_updated_at=now(),updated_at=now()
  WHERE bunny_guid=${video.guid} AND thumbnail_bytes IS NULL
  RETURNING id`;
- return updated.length?"saved":"skipped";
+ return updated.length?"saved":"already";
 }
 
 function failureMessage(error:unknown, operation:"import"|"save"){
@@ -53,7 +54,7 @@ export async function importBunnyVideo(_state:State|null,form:FormData):Promise<
   try{thumbnailSaved=(await syncSelectedThumbnail(video))==="saved"}
   catch(error){console.error("[Bunny thumbnail import]",error instanceof Error?error.message:"Unavailable");}
   revalidatePath("/admin/videos");
-  return {ok:true,message:"Video imported as a private draft. "+(thumbnailSaved?"The selected Bunny thumbnail was imported. ":"Its Bunny thumbnail could not be copied; you can retry with Sync all. ")+"Confirm rights and rating before publishing."};
+  return {ok:true,message:"Video imported as a private draft. "+(thumbnailSaved?"Selected Bunny thumbnail imported.":"Thumbnail not available from Bunny; run Sync all to see the exact error.")+" Confirm rights and rating before publishing."};
  }catch(e){return {message:failureMessage(e,"import")}}
 }
 
@@ -95,23 +96,39 @@ export async function syncBunnyUploads(_state:State|null):Promise<State>{
     WHERE bunny_guid=ANY(${guids}::text[]) AND thumbnail_bytes IS NULL LIMIT 100`;
   const missingGuids=new Set(missing.map(v=>String(v.bunny_guid).toLowerCase()));
   const targets=valid.filter(v=>missingGuids.has(v.guid.toLowerCase()));
-  let thumbnails=0,unavailable=0;
-  // Batch requests to avoid flooding Bunny and slowing the administrator UI.
+  let thumbnails=0;
+  const reasons:Record<string,number>={};
+  // Batch requests so thumbnail retrieval doesn't block normal page loads.
   for(let i=0;i<targets.length;i+=5){
    const results=await Promise.all(targets.slice(i,i+5).map(async video=>{
     try{return await syncSelectedThumbnail(video)}
     catch(error){
      console.error("[Bunny thumbnail sync]",error instanceof Error?error.message:"Unavailable");
-     return "skipped" as const;
+     return "unavailable" as const;
     }
    }));
-   thumbnails+=results.filter(x=>x==="saved").length;
-   unavailable+=results.filter(x=>x==="skipped").length;
+   for(const state of results){
+    if(state==="saved")thumbnails++;
+    else if(state!=="already")reasons[state]=(reasons[state]||0)+1;
+   }
   }
+  const descriptions:Record<string,string>={
+   denied_403:"CDN access denied (403). Check Bunny Stream Security: allowed domain fim-addis.vercel.app, Block Direct URL File Access and CDN token authentication.",
+   missing_404:"Thumbnail not found (404). Check the selected Bunny thumbnail and library CDN hostname.",
+   too_large:"Thumbnail exceeds 500 KB. Select or upload a smaller image.",
+   invalid_filename:"Bunny returned a thumbnail filename that this site cannot safely use.",
+   cdn_unconfigured:"Bunny CDN hostname is missing or invalid in Vercel.",
+   invalid_image:"The thumbnail URL did not return a supported JPG, PNG or WebP image.",
+   redirect:"Bunny CDN redirected the thumbnail URL unexpectedly.",
+   unavailable:"Bunny thumbnail download timed out or failed over the network.",
+   invalid_id:"Invalid Bunny video ID.",
+   other_http:"Bunny CDN returned a non-success HTTP response."
+  };
+  const errors=Object.entries(reasons).map(([type,count])=>`${count} × ${descriptions[type]||type}`).join(" ");
   revalidatePath("/admin/videos");
   revalidatePath("/");
   revalidatePath("/videos");
-  return {ok:true,message:`Bunny sync complete: ${imported} new video(s) imported as private drafts; ${thumbnails} Bunny thumbnail(s) saved. ${unavailable?`${unavailable} thumbnail(s) could not be fetched (check Bunny CDN access or selected artwork). `:""}Manually uploaded Fim Addis thumbnails were kept. Review rights, rating and publication for new videos.`};
+  return {ok:true,message:`Bunny sync: ${imported} new draft(s), ${thumbnails} thumbnail(s) imported. ${errors?`Missing thumbnail details: ${errors} `:""}Manual thumbnails were kept. New videos still require rights, rating and publication review.`};
  }catch(error){return {message:failureMessage(error,"import")}}
 }
 
