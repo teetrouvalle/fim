@@ -15,7 +15,7 @@ export default async function VideoManagement(){
  catch(error){errorMessage=error instanceof Error?error.message:"The connection failed."}
  const saved=new Set(videos.map(v=>v.bunny_guid));
  const unimported=library.filter(item=>!saved.has(item.guid));
- return <main className="shell admin-dashboard"><Link href="/admin" className="subtle-link">← Dashboard</Link><p className="eyebrow" style={{marginTop:34}}>ADMINISTRATION</p><h1>Video management</h1><p className="muted">Sync videos uploaded in Bunny, review licensing and age classification, choose Free or a paid tier, then publish each video. Free videos can be watched without a membership once secure Bunny playback is available. Paid videos require an approved account and eligible membership.</p>
+ return <main className="shell admin-dashboard"><Link href="/admin" className="subtle-link">← Dashboard</Link><p className="eyebrow" style={{marginTop:34}}>ADMINISTRATION</p><h1>Video management</h1><p className="muted">Sync videos uploaded in Bunny, review licensing and age classification, choose Free or a paid tier, then publish each video. Free videos can be watched without a membership once secure Bunny playback is available. Paid videos require an eligible membership.</p>
  <section className="admin-section"><h2>Bunny Stream uploads</h2>
  <p className="muted">Connected library ID in Vercel: <strong>{libraryId}</strong>. Compare this with the Library ID displayed in your Bunny Stream dashboard. They must match, and the API key must belong to that same library.</p>
  {errorMessage?<div className="form-alert" role="status"><strong>Unable to read Bunny uploads:</strong> {errorMessage} Verify the library ID and its matching Stream API key in Vercel. Your website catalog is independent of the Bunny upload list.</div>:
@@ -27,6 +27,22 @@ export default async function VideoManagement(){
  <section className="admin-section"><p className="eyebrow">PUBLIC CATALOG</p><h2>Free catalog</h2><p className="muted">Mark any imported Bunny video as Free in its editor below. Free films have no membership paywall, but still require distribution rights, age-classification review, and publication.</p>
  <p className="muted">{videos.filter(v=>v.is_free&&v.published).length} published free film(s) · {videos.filter(v=>v.is_free&&!v.published).length} free draft(s)</p>
  </section>
- <section className="admin-section"><p className="eyebrow">CATALOG ENTRIES</p><h2>Manage free and paid films</h2><div className="video-admin-grid">{videos.length?videos.map(v=><div key={v.id}><EditVideo video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/><DeleteVideo id={String(v.id)} title={String(v.title)}/></div>):<p className="muted">Import a video from Bunny first.</p>}</div></section>
+ <section className="admin-section">
+ <p className="eyebrow">CATALOG ENTRIES</p>
+ <h2>Manage free and paid films</h2>
+ <p className="muted">Select a video to expand its full settings. All entries stay collapsed until you need to edit them.</p>
+ <div className="video-manager-list">
+ {videos.length?videos.map(v=><details className="video-manager-item" key={String(v.id)}>
+   <summary className="video-manager-summary">
+     <span className="video-manager-name">{String(v.title)}</span>
+     <span className="video-manager-tier">{v.is_free?"Free":v.tier==="purchase_only"?"Purchase only":String(v.tier).charAt(0).toUpperCase()+String(v.tier).slice(1)}</span>
+   </summary>
+   <div className="video-manager-details">
+     <EditVideo video={{id:String(v.id),title:String(v.title),description:String(v.description||""),tier:String(v.tier),is_free:Boolean(v.is_free),has_thumbnail:Boolean(v.has_thumbnail),thumbnail_version:v.thumbnail_updated_at?new Date(v.thumbnail_updated_at).getTime().toString():"0",rights_verified:Boolean(v.rights_verified),rating_reviewed:Boolean(v.rating_reviewed),published:Boolean(v.published)}}/>
+     <div className="video-manager-delete"><DeleteVideo id={String(v.id)} title={String(v.title)}/></div>
+   </div>
+ </details>):<p className="muted">Import a video from Bunny first.</p>}
+ </div>
+ </section>
  </main>;
 }
