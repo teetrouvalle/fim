@@ -181,3 +181,8 @@
 .video-manager-delete{border-top:1px solid var(--line);padding-top:16px;margin-top:12px}
 .video-manager-delete .admin-form{align-items:flex-start}
 @media(max-width:550px){.video-manager-summary{gap:10px;padding:12px;min-height:56px;grid-template-columns:minmax(0,1fr) auto 12px}.video-manager-name{font-size:13px}.video-manager-tier{min-width:65px;font-size:10px;padding:5px 7px}.video-manager-details{padding:4px 14px 17px}}
+
+/* Homepage member-film catalogue: visible first 12 and clear member-only expansion */
+.home-see-more{display:flex;justify-content:center;align-items:center;padding:26px 0 10px}
+.home-see-more-action{min-width:min(100%,340px);justify-content:center;text-align:center;font-size:14px;min-height:52px}
+@media(max-width:540px){.home-see-more-action{width:100%}}
