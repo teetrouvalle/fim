@@ -22,7 +22,7 @@ export default async function VideoManagement({searchParams}:{searchParams:Promi
  return <main className="shell admin-dashboard"><Link href="/admin" className="subtle-link">← Dashboard</Link><p className="eyebrow" style={{marginTop:34}}>ADMINISTRATION</p><h1>Video management</h1><p className="muted">Sync videos uploaded in Bunny, review licensing and age classification, choose Free or a paid tier, then publish each video. Free videos can be watched without a membership once secure Bunny playback is available. Paid videos require an eligible membership.</p>
  <section className="admin-section" id="bunny-uploads">
  <h2>Bunny Stream uploads</h2>
- <p className="muted">The catalog editors below load immediately without contacting Bunny Stream. Use Sync to import new uploads, or check the upload list only when you need it.</p>
+ <p className="muted">The catalog editors below load without waiting for Bunny Stream. Sync imports new videos and their selected Bunny thumbnails, and fills missing thumbnails on existing videos. Your manually uploaded Fim Addis thumbnails are preserved.</p>
  <SyncBunnyUploads/>
  {showBunnyUploads?
    <>
