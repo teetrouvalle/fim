@@ -15,7 +15,7 @@ export default async function AdminPayments(){
  const usd=getPlan(String(p.plan_id))?.priceCryptoUsd;
  return <article className="account-panel" key={p.id}>
  <div className="review-heading"><div><strong>{p.account_email}</strong><p className="muted">{p.plan_id.toUpperCase()} · {crypto?"$"+usd?.toFixed(2)+" USD · "+crypto.wallet.currency+" on "+crypto.wallet.network:Number(p.amount_etb).toLocaleString()+" ETB · M-Pesa"} · {new Date(p.created_at).toLocaleString("en-GB")}</p></div><span className="status-label">{p.status.toUpperCase()}</span></div>
- <p>{crypto?"Blockchain transaction hash / signature":"M-Pesa transaction reference"}: <strong className="crypto-address">{crypto?crypto.transaction:p.reference||"Not supplied"}</strong></p><p>Receipt channel: {p.receipt_channel} {p.receipt_filename?"· "+p.receipt_filename:""}</p>
+ <p>{crypto?"Blockchain transaction hash / signature":"M-Pesa transaction reference"}: <strong className="crypto-address">{crypto?(crypto.transaction||"Not provided — verify receipt manually"):(p.reference||"Not provided — verify receipt manually")}</strong></p><p>Receipt channel: {p.receipt_channel} {p.receipt_filename?"· "+p.receipt_filename:""}</p>
  {p.receipt_filename&&<Link href={`/admin/payments/${p.id}/receipt`} className="subtle-link" target="_blank">View private receipt ↗</Link>}
 
  {p.status==="pending"?<ReviewForm id={p.id}/>:<p className="muted">Reviewed: {p.reviewed_at?new Date(p.reviewed_at).toLocaleString("en-GB"):"—"} {p.review_note?"· "+p.review_note:""}</p>}
